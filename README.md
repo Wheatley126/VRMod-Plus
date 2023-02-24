@@ -40,12 +40,13 @@ When this is more finished and polished I'll upload it to the workshop.
     * Fix Halos.
     * Add indicator that objects can be picked up.
     * Add hold finger poses.
+    * Move UpdateShadowControl to a hook and remove the pickup controller.
 
 * ### UI
     * Add skins and bodygroups to the hands menu.
-    * Properly implement the ENTITY.VRInfo table.
 
 * ### Mod Support
+    * Properly implement the ENTITY.VRInfo table.
     * Overhaul input hook.
     * Add more PrePickup and PostPickup hooks (and possibly PostDrop).
     * Replace various instances of hook.Call with hook.Run.
