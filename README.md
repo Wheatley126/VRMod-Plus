@@ -45,6 +45,8 @@ Some of the names and functions might change before release so be prepared if yo
     * Add indicator that objects can be picked up.
     * Add hold finger poses.
     * Move UpdateShadowControl to a hook and remove the pickup controller.
+    * Use serverside copy of hand pose to reduce networking.
+    * Drop object if it's been too far from the hand for too long.
 
 * ### UI
     * Add skins and bodygroups to the hands menu.
