@@ -30,6 +30,9 @@ When this is more finished and polished I'll upload it to the workshop.
     * Menus can specify a custom render function that gets called in place of the default.
     * Entities can be picked up and dropped manually with vrmod.DoPickup() and vrmod.DoDrop().
 
+* ### QoL
+    * Removed the voice permissions prompt upon starting VR. You will still be prompted when activating voice from the chat menu.
+
 
 ## To Do:
 
@@ -49,3 +52,4 @@ When this is more finished and polished I'll upload it to the workshop.
 
 * ### Other
     * Make hand-agnostic control scheme.
+    * Recompile hand models with same bone structure
