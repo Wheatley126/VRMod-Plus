@@ -30,7 +30,6 @@ When this is more finished and polished I'll upload it to the workshop.
     * Menus can specify a custom render function that gets called in place of the default.
     * Entities can be picked up and dropped manually with vrmod.DoPickup() and vrmod.DoDrop().
 
----
 
 ## To Do:
 
