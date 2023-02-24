@@ -52,4 +52,5 @@ When this is more finished and polished I'll upload it to the workshop.
 
 * ### Other
     * Make hand-agnostic control scheme.
-    * Recompile hand models with same bone structure
+    * Recompile hand models with same bone structure.
+    * Update hands model after respawn.
