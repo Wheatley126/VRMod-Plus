@@ -1,8 +1,12 @@
 # VR Mod+
-This repository is a WIP. It'll be updated later with documentation.  
+This repository is a WIP fork of the [original VRMod by Catse](https://steamcommunity.com/sharedfiles/filedetails/?id=1678408548). It'll be updated later with documentation.  
 When this is more finished and polished I'll upload it to the workshop.
 
-<font color=lightblue>Some of this will probably change before release so just be prepared if you make an addon with it.</font>
+Some of the names and functions might change before release so be prepared if you decide to make an addon using it.
+
+### *If you wish to support the VRMod community, I can't take donations, but you should consider donating to [another dev who could use it](https://ko-fi.com/pescorrkastelina).*
+
+---
 
 ## Current Changes (Probably forgot some):
 
