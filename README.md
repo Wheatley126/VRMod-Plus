@@ -61,3 +61,4 @@ Some of the names and functions might change before release so be prepared if yo
     * Make hand-agnostic control scheme.
     * Recompile hand models with same bone structure.
     * Update hands model after respawn.
+    * Improve vehicle support.

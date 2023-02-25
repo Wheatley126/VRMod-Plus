@@ -558,7 +558,9 @@ if CLIENT then
 
 			if wep.ArcticVR then return VR_WEPDRAWMODE_VIEWMODEL end
 
-			// TODO: Add check for setting in VR_Info
+			if wep.VRInfo && wep.VRInfo.drawmode != nil then
+				return wep.VRInfo.drawmode
+			end
 		end
 
 		return convars.vrmod_useworldmodels:GetBool() && VR_WEPDRAWMODE_WORLDMODEL or VR_WEPDRAWMODE_VIEWMODEL
@@ -681,7 +683,7 @@ function vrmod.IsHandEmpty(pl,bLeft)
 	if !vrmod.IsPlayerInVR(pl) then return false end
 
 	local wep = pl:GetActiveWeapon()
-	if wep:IsValid() && wep:GetClass() != "weapon_vrmod_empty" && (wep.VRInfo && wep.VRInfo.lefthand or false) == bLeft then
+	if wep:IsValid() && wep:GetClass() != "weapon_vrmod_empty" && wep:GetVRHand() == bLeft then
 		return false
 	end
 
@@ -692,7 +694,22 @@ function vrmod.IsHandEmpty(pl,bLeft)
 	end
 end
 
+local WEAPON = FindMetaTable("Weapon")
 
+// Set which hand the weapon is in
+// Note that this doesn't network automatically
+function WEAPON:SetVRHand(bLeftHand)
+	if !self.VRInfo then self.VRInfo = {} end
+	self.VRInfo.lefthand = bLeftHand
+end
+
+// Returns which hand the weapon is in
+function WEAPON:GetVRHand()
+	return self.VRInfo && self.VRInfo.lefthand or false
+end
+
+
+// Hook Overrides (might get replace this)
 local hookTranslations = {
 	VRUtilEventTracking			= "VRMod_Tracking",
 	VRUtilEventInput			= "VRMod_Input",
