@@ -48,9 +48,6 @@ Some of the names and functions might change before release so be prepared if yo
     * Use serverside copy of hand pose to reduce networking.
     * Drop object if it's been too far from the hand for too long.
 
-* ### UI
-    * Add skins and bodygroups to the hands menu.
-
 * ### Mod Support
     * Properly implement the ENTITY.VRInfo table.
     * Overhaul input hook.
@@ -59,6 +56,5 @@ Some of the names and functions might change before release so be prepared if yo
 
 * ### Other
     * Make hand-agnostic control scheme.
-    * Recompile hand models with same bone structure.
     * Update hands model after respawn.
     * Improve vehicle support.
