@@ -32,6 +32,28 @@ function vrmod.SetHandsModel(mdl)
 	end
 end
 
+local function ResetBodygroups(testent)
+	if !testent:IsValid() then return end
+	testent:SetNoDraw(true)
+
+	local str = ""
+	for i = 1,testent:GetNumBodyGroups() do
+		str = str..(i == 1 && "0" or " 0")
+	end
+
+	convars.vrmod_floatinghands_bg:SetString(str)
+end
+
+local function UpdateBodygroup(group,id)
+	local str = string.Trim(convars.vrmod_floatinghands_bg:GetString())
+
+	local pos = 1+group*2
+	if #str >= pos then
+		str = string.SetChar(str,pos,tostring(id))
+	end
+	convars.vrmod_floatinghands_bg:SetString(str)
+end
+
 function g_VR.OpenHandsMenu()
 	g_VR.CloseHandsMenu()
 
@@ -42,6 +64,119 @@ function g_VR.OpenHandsMenu()
 	pnl:SetTitle("Change Hands")
 
 	local selected = string.Trim(convars.vrmod_floatinghands_mdl:GetString())
+
+	local sec_opt = pnl:Add("DScrollPanel")
+	sec_opt:SetSize(165,320)
+	sec_opt:DockMargin(5,5,5,5)
+
+	function sec_opt:Paint(w,h)
+		surface.SetDrawColor(220,220,220)
+		surface.DrawRect(0,0,w,h)
+	end
+
+	function sec_opt:Repopulate()
+		sec_opt:Clear()
+		local hands = vrmod.GetHands()
+		if !hands:IsValid() then return end
+
+		local hasskins = hands:SkinCount() > 1
+		if hasskins then
+			local skins = sec_opt:Add("DNumSlider")
+			skins:SetText("Skin")
+			skins:SetMinMax(0,hands:SkinCount()-1)
+			skins:SetDecimals(0)
+			skins:SetValue(convars.vrmod_floatinghands_skin:GetInt())
+			skins:SetConVar("vrmod_floatinghands_skin")
+
+			skins.Label:SetTextColor(Color(0,0,0))
+			skins.Label:SetWide(30)
+			local txt = skins:GetTextArea()
+			txt:SetWide(14)
+
+			skins.Scratch:SetVisible(false)
+
+			function skins:ValueChanged(val)
+				val = math.Clamp(tonumber( val ) || 0, self:GetMin(), self:GetMax())
+				val = math.floor(val)
+
+				if ( self.TextArea != vgui.GetKeyboardFocus() ) then
+					self.TextArea:SetValue( val )
+				end
+
+				self.Slider:SetSlideX( val )
+
+				self:OnValueChanged( val )
+			end
+
+			skins:SetSize(128,30)
+			skins:DockMargin(5,5,5,5)
+			skins:Dock(TOP)
+
+			skins.PerformLayout = function() end
+		end
+
+		local first = true
+		for i,t in ipairs(hands:GetBodyGroups()) do
+			if t.num == 1 then continue end
+
+			// Make the divider
+			if first then
+				first = false
+				if hasskins then
+					local divide = sec_opt:Add("DVerticalDivider")
+					divide:SetSize(5,1)
+					divide:DockMargin(5,5,5,5)
+					divide:Dock(TOP)
+
+					function divide:Paint(w,h)
+						surface.SetDrawColor(128,128,128,64)
+						surface.DrawRect(0,0,w,h)
+					end
+				end
+			end
+			
+
+			local bg = sec_opt:Add("DNumSlider")
+			bg:SetText(t.name)
+			bg:SetMinMax(0,t.num-1)
+			bg:SetDecimals(0)
+			bg:SetValue(hands:GetBodygroup(t.id))
+			//bg:SetConVar("vrmod_floatinghands_skin")
+
+			bg.Label:SetTextColor(Color(0,0,0))
+			bg.Label:SetWide(30)
+			local txt = bg:GetTextArea()
+			txt:SetWide(14)
+
+			bg.Scratch:SetVisible(false)
+
+			function bg:ValueChanged(val)
+				val = math.Clamp(tonumber( val ) || 0, self:GetMin(), self:GetMax())
+				val = math.floor(val)
+
+				if ( self.TextArea != vgui.GetKeyboardFocus() ) then
+					self.TextArea:SetValue( val )
+				end
+
+				self.Slider:SetSlideX( val )
+
+				self:OnValueChanged( val )
+			end
+
+			bg:SetSize(128,30)
+			bg:DockMargin(5,5,5,5)
+			bg:Dock(TOP)
+
+			bg.lastint = bg:GetValue()
+			function bg:OnValueChanged(value)
+				local new = math.floor(value)
+				if new == self.lastint then return end
+
+				self.lastint = new
+				UpdateBodygroup(t.id,new)
+			end
+		end
+	end
 
 	local sec_mdl = pnl:Add("DScrollPanel")
 	sec_mdl:SetSize(450,320)
@@ -73,28 +208,21 @@ function g_VR.OpenHandsMenu()
 		function btn:DoClick()
 			dontUpdate = true
 			convars.vrmod_floatinghands_skin:SetInt(0)
-			convars.vrmod_floatinghands_bg:SetString("")
 			dontUpdate = false
 
+			ResetBodygroups(ClientsideModel(g_VR.handsModels[self:GetValue()]))
 			convars.vrmod_floatinghands_mdl:SetString(self:GetValue())
+
+			sec_opt:Repopulate()
 
 			selected = self:GetValue()
 		end
 	end
 
-
-	local sec_opt = pnl:Add("DScrollPanel")
-	sec_opt:SetSize(165,320)
-	sec_opt:DockMargin(5,5,5,5)
-
-	function sec_opt:Paint(w,h)
-		surface.SetDrawColor(220,220,220)
-		surface.DrawRect(0,0,w,h)
-	end
-
-
 	sec_mdl:Dock(LEFT)
 	sec_opt:Dock(RIGHT)
+
+	sec_opt:Repopulate()
 
 	g_VR.handsMenu = pnl
 	pnl:MakePopup()
@@ -178,9 +306,8 @@ function g_VR.RecreateHands()
 		end
 		self.FingerIDs = fingerboneids
 
-		self.BoneCount = self:GetBoneCount()
 		local boneinfo = {}
-		for i = 0, self.BoneCount-1 do
+		for i = 0, self:GetBoneCount()-1 do
 			local parent = self:GetBoneParent(i)
 			local mtx = self:GetBoneMatrix(i) or Matrix()
 			local mtxParent = self:GetBoneMatrix(parent) or mtx
@@ -211,7 +338,7 @@ function g_VR.RecreateHands()
 	hands:SetupBones()
 	hands:UpdateBoneInfo()
 
-	hands:AddCallback("BuildBonePositions",function(self)
+	hands:AddCallback("BuildBonePositions",function(self,numbones)
 		if !self.BoneInfo then return end
 
 		if self.LastFrame ~= FrameNumber() then
@@ -229,7 +356,7 @@ function g_VR.RecreateHands()
 				end
 			end
 
-			for i = 0,self.BoneCount-1 do
+			for i = 0,numbones-1 do
 				local info = self.BoneInfo[i]
 				local parentInfo = self.BoneInfo[info.parent] or info
 				local wpos, wang = LocalToWorld(info.relativePos, info.relativeAng + info.offsetAng, parentInfo.pos, parentInfo.ang)
@@ -244,7 +371,7 @@ function g_VR.RecreateHands()
 			end
 		end
 
-		for i = 0,self.BoneCount-1 do
+		for i = 0,numbones-1 do
 			if self:GetBoneMatrix(i) then
 				self:SetBoneMatrix(i, self.BoneInfo[i].targetMatrix)
 			end
