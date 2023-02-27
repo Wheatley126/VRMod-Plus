@@ -84,32 +84,39 @@ if CLIENT then
 		local frame = net.lerpedFrame
 		local inVehicle = ply:InVehicle()
 		local plyAng = inVehicle and ply:GetVehicle():GetAngles() or Angle(0,frame.characterYaw,0)
+
 		if inVehicle then
 			_,plyAng = LocalToWorld(zeroVec,Angle(0,90,0),zeroVec, plyAng)
 		end
+
 		--alt head
 		if net.characterAltHead then
 			local tmp1, tmp2 = WorldToLocal(zeroVec,frame.hmdAng,zeroVec,Angle(0,frame.characterYaw,0))
 			ply:ManipulateBoneAngles( bones.b_head, Angle(-tmp2.roll,-tmp2.pitch,tmp2.yaw) )
 		end
+
 		--****************** CROUCHING ******************
-		if not inVehicle then
+		if !inVehicle then
 			local headHeight = frame.hmdPos.z + (frame.hmdAng:Forward()*-3).z
 			local cutAmount = math.Clamp(charinfo.preRenderPos.z+charinfo.characterEyeHeight - headHeight,0,40)
+
 			--spine
 			local spineTargetLen = charinfo.spineLen - cutAmount*0.5
 			local a1 = math.acos(spineTargetLen/charinfo.spineLen)
 			charinfo.horizontalCrouchOffset = math.sin(a1) * charinfo.spineLen
 			ply:ManipulateBoneAngles(bones.b_spine, Angle(0,math.deg(a1),0))
+
 			--legs
 			charinfo.verticalCrouchOffset = cutAmount*0.5
 			local legTargetLen = charinfo.upperLegLen+charinfo.lowerLegLen - charinfo.verticalCrouchOffset*0.8 --actually cut slightly less or it looks like the legs float with the player anim
 			local a1 = math.deg(math.acos( (charinfo.upperLegLen*charinfo.upperLegLen + legTargetLen*legTargetLen - charinfo.lowerLegLen*charinfo.lowerLegLen) / (2*charinfo.upperLegLen*legTargetLen) ))
 			local a23 = 180 - a1 - math.deg(math.acos( (charinfo.lowerLegLen*charinfo.lowerLegLen + legTargetLen*legTargetLen - charinfo.upperLegLen*charinfo.upperLegLen) / (2*charinfo.lowerLegLen*legTargetLen) ))
+
 			if a1 ~= a1 or a23 ~= a23 then
 				a1 = 0
 				a23 = 180
 			end
+
 			ply:ManipulateBoneAngles( bones.b_leftCalf, Angle(0,-(a23-180),0) )
 			ply:ManipulateBoneAngles( bones.b_leftThigh, Angle(0,-a1,0) )
 			ply:ManipulateBoneAngles( bones.b_rightCalf, Angle(0,-(a23-180),0) )
@@ -125,175 +132,129 @@ if CLIENT then
 			ply:ManipulateBoneAngles( bones.b_leftFoot, Angle(0,0,0) )
 			ply:ManipulateBoneAngles( bones.b_rightFoot, Angle(0,0,0) )
 		end
-		--****************** LEFT ARM ******************
-		local L_TargetPos = frame.lefthandPos
-		local L_TargetAng = frame.lefthandAng
-		local mtx = ply:GetBoneMatrix(bones.b_leftClavicle)
-		local L_ClaviclePos = mtx and mtx:GetTranslation() or Vector()
-		charinfo.L_ClaviclePos = L_ClaviclePos
-		--Calculate LEFT clavicle target angle
-		local tmp1 = L_ClaviclePos + plyAng:Right()*-charinfo.clavicleLen --neutral shoulder position
-		local tmp2 = tmp1 + (L_TargetPos-tmp1)*0.15 --desired shoulder position
-		local L_ClavicleTargetAng
-		if not inVehicle then
-			L_ClavicleTargetAng = (tmp2-L_ClaviclePos):Angle()
-		else
-			_,L_ClavicleTargetAng = LocalToWorld(zeroVec,WorldToLocal(tmp2-L_ClaviclePos,zeroAng,zeroVec,plyAng):Angle(),zeroVec,plyAng)
+
+		for i = 1,2 do
+			local left = i == 1
+			local name = left && "left" or "right"
+
+			local TargetPos = frame[name.."handPos"]
+			local TargetAng = frame[name.."handAng"]
+			local mtx = ply:GetBoneMatrix(bones["b_"..name.."Clavicle"])
+			local ClaviclePos = mtx and mtx:GetTranslation() or Vector()
+
+			charinfo[(left && "L" or "R").."_ClaviclePos"] = ClaviclePos
+
+			--Calculate clavicle target angle
+			local tmp1 = ClaviclePos + plyAng:Right()*charinfo.clavicleLen*(left && -1 or 1) --neutral shoulder position
+			local tmp2 = tmp1 + (TargetPos-tmp1)*0.15 --desired shoulder position
+			local ClavicleTargetAng
+
+			if !inVehicle then
+				ClavicleTargetAng = (tmp2-ClaviclePos):Angle()
+			else
+				_,ClavicleTargetAng = LocalToWorld(zeroVec,WorldToLocal(tmp2-ClaviclePos,zeroAng,zeroVec,plyAng):Angle(),zeroVec,plyAng)
+			end
+			ClavicleTargetAng:RotateAroundAxis(ClavicleTargetAng:Forward(),90)
+
+			local UpperarmPos = ClaviclePos + ClavicleTargetAng:Forward()*charinfo.clavicleLen
+			local TargetVec = (TargetPos)-UpperarmPos
+			local TargetVecLen = TargetVec:Length()
+			local TargetVecAng, TargetVecAngLocal
+
+			if !inVehicle then
+				TargetVecAng = TargetVec:Angle()
+			else
+				TargetVecAngLocal = WorldToLocal(TargetVec, zeroAng,zeroVec, plyAng):Angle()
+				_,TargetVecAng = LocalToWorld(Vector(),TargetVecAngLocal,zeroVec,plyAng)
+			end
+
+			--Calculate upperarm target angle
+			local UpperarmTargetAng = TargetVecAng*1 --copy to avoid weirdness
+			if !left then UpperarmTargetAng:RotateAroundAxis(TargetVec, 180) end
+
+			local tmp
+			if !inVehicle then
+				tmp = Angle(TargetVecAng.pitch, frame.characterYaw, left && -90 or 90)
+			else
+				_,tmp = LocalToWorld(Vector(),Angle(TargetVecAngLocal.pitch, 0, left && -90 or 90),zeroVec,plyAng)
+			end
+
+			local tpos, tang = WorldToLocal(zeroVec,tmp,zeroVec,TargetVecAng)
+			UpperarmTargetAng:RotateAroundAxis(UpperarmTargetAng:Forward(),tang.roll)
+
+			local a1 = math.deg(math.acos( (charinfo.upperArmLen*charinfo.upperArmLen + TargetVecLen*TargetVecLen - charinfo.lowerArmLen*charinfo.lowerArmLen) / (2*charinfo.upperArmLen*TargetVecLen) ))
+			if a1 == a1 then
+				UpperarmTargetAng:RotateAroundAxis(UpperarmTargetAng:Up(),a1)
+			end
+
+			local test
+			if !inVehicle then
+				test = ((TargetPos.z - (UpperarmPos.z)) + 20) *1.5
+			else
+				test = ( (TargetPos - UpperarmPos):Dot(plyAng:Up())  + 20) *1.5
+			end
+
+			if test < 0 then
+				test = 0
+			end
+			UpperarmTargetAng:RotateAroundAxis(TargetVec:GetNormalized(),(30 + test)*(left && 1 or -1))
+
+			--Calculate forearm target angle
+			local ForearmTargetAng = UpperarmTargetAng*1
+			local a23 = 180 - a1 - math.deg(math.acos( (charinfo.lowerArmLen*charinfo.lowerArmLen + TargetVecLen*TargetVecLen - charinfo.upperArmLen*charinfo.upperArmLen) / (2*charinfo.lowerArmLen*TargetVecLen) ))
+			if a23 == a23 then
+				ForearmTargetAng:RotateAroundAxis(ForearmTargetAng:Up(),180+a23)
+			end
+
+			--Calculate wrist and ulna angle
+			local tmp = Angle(TargetAng.pitch, TargetAng.yaw, TargetAng.roll - 90)
+			local tpos, tang = WorldToLocal(zeroVec,tmp,zeroVec,ForearmTargetAng)
+			local WristTargetAng = ForearmTargetAng*1
+			WristTargetAng:RotateAroundAxis(WristTargetAng:Forward(),tang.roll)
+			local UlnaTargetAng = LerpAngle(0.5,ForearmTargetAng,WristTargetAng)
+
+
+			--set absolute override angles for the relevant bones
+			boneinfo[bones["b_"..name.."Clavicle"]].overrideAng = ClavicleTargetAng
+			boneinfo[bones["b_"..name.."Upperarm"]].overrideAng = UpperarmTargetAng
+			boneinfo[bones["b_"..name.."Hand"]].overrideAng = TargetAng + (left && angle_zero or Angle(0,0,180))
+			if bones["b_"..name.."Wrist"] && boneinfo[bones["b_"..name.."Wrist"]] && bones["b_"..name.."Ulna"] && boneinfo[bones["b_"..name.."Ulna"]] then
+				boneinfo[bones["b_"..name.."Forearm"]].overrideAng = ForearmTargetAng
+				boneinfo[bones["b_"..name.."Wrist"]].overrideAng = WristTargetAng
+				boneinfo[bones["b_"..name.."Ulna"]].overrideAng = UlnaTargetAng
+			else
+				boneinfo[bones["b_"..name.."Forearm"]].overrideAng = UlnaTargetAng
+			end
 		end
-		L_ClavicleTargetAng:RotateAroundAxis(L_ClavicleTargetAng:Forward(),90)
-		--
-		local L_UpperarmPos = L_ClaviclePos + L_ClavicleTargetAng:Forward()*charinfo.clavicleLen
-		local L_TargetVec = (L_TargetPos)-L_UpperarmPos
-		local L_TargetVecLen = L_TargetVec:Length()
-		local L_TargetVecAng, L_TargetVecAngLocal
-		if not inVehicle then
-			L_TargetVecAng = L_TargetVec:Angle()
-		else
-			L_TargetVecAngLocal = WorldToLocal(L_TargetVec, zeroAng,zeroVec, plyAng):Angle()
-			_,L_TargetVecAng = LocalToWorld(Vector(),L_TargetVecAngLocal,zeroVec,plyAng)
-		end
-		--Calculate LEFT upperarm target angle
-		local L_UpperarmTargetAng = Angle(L_TargetVecAng.pitch,L_TargetVecAng.yaw, L_TargetVecAng.roll) --copy to avoid weirdness
-		local tmp
-		if not inVehicle then
-			tmp = Angle(L_TargetVecAng.pitch, frame.characterYaw, -90)
-		else
-			_,tmp = LocalToWorld(Vector(),Angle(L_TargetVecAngLocal.pitch, 0, -90),zeroVec,plyAng)
-		end
-		local tpos, tang = WorldToLocal(zeroVec,tmp,zeroVec,L_TargetVecAng)
-		L_UpperarmTargetAng:RotateAroundAxis(L_UpperarmTargetAng:Forward(),tang.roll)
-		local a1 = math.deg(math.acos( (charinfo.upperArmLen*charinfo.upperArmLen + L_TargetVecLen*L_TargetVecLen - charinfo.lowerArmLen*charinfo.lowerArmLen) / (2*charinfo.upperArmLen*L_TargetVecLen) ))
-		if a1 == a1 then
-			L_UpperarmTargetAng:RotateAroundAxis(L_UpperarmTargetAng:Up(),a1)
-		end
-		local test
-		if not inVehicle then
-			test = ((L_TargetPos.z - (L_UpperarmPos.z)) + 20) *1.5
-		else
-			test = ( (L_TargetPos - L_UpperarmPos):Dot(plyAng:Up())  + 20) *1.5
-		end
-		if test < 0 then
-			test = 0
-		end
-		L_UpperarmTargetAng:RotateAroundAxis(L_TargetVec:GetNormalized(),30 + test)
-		--Calculate LEFT forearm target angle
-		local L_ForearmTargetAng = Angle(L_UpperarmTargetAng.pitch,L_UpperarmTargetAng.yaw, L_UpperarmTargetAng.roll)
-		local a23 = 180 - a1 - math.deg(math.acos( (charinfo.lowerArmLen*charinfo.lowerArmLen + L_TargetVecLen*L_TargetVecLen - charinfo.upperArmLen*charinfo.upperArmLen) / (2*charinfo.lowerArmLen*L_TargetVecLen) ))
-		if a23 == a23 then
-			L_ForearmTargetAng:RotateAroundAxis(L_ForearmTargetAng:Up(),180+a23)
-		end
-		--Calculate LEFT wrist and ulna angle
-		local tmp = Angle(L_TargetAng.pitch, L_TargetAng.yaw, L_TargetAng.roll - 90)
-		local tpos, tang = WorldToLocal(zeroVec,tmp,zeroVec,L_ForearmTargetAng)
-		local L_WristTargetAng = Angle(L_ForearmTargetAng.pitch, L_ForearmTargetAng.yaw, L_ForearmTargetAng.roll)
-		L_WristTargetAng:RotateAroundAxis(L_WristTargetAng:Forward(),tang.roll)
-		local L_UlnaTargetAng = LerpAngle(0.5,L_ForearmTargetAng,L_WristTargetAng)
-		--****************** RIGHT ARM ******************
-		local R_TargetPos = frame.righthandPos
-		local R_TargetAng = frame.righthandAng
-		local mtx = ply:GetBoneMatrix(bones.b_rightClavicle)
-		local R_ClaviclePos = mtx and mtx:GetTranslation() or Vector()
-		charinfo.R_ClaviclePos = R_ClaviclePos
-		--Calculate RIGHT clavicle target angle
-		local tmp1 = R_ClaviclePos + plyAng:Right()*charinfo.clavicleLen
-		local tmp2 = tmp1 + (R_TargetPos-tmp1)*0.15
-		local R_ClavicleTargetAng
-		if not inVehicle then
-			R_ClavicleTargetAng = (tmp2-R_ClaviclePos):Angle()
-		else
-			_,R_ClavicleTargetAng = LocalToWorld(Vector(),WorldToLocal(tmp2-R_ClaviclePos,zeroAng,zeroVec,plyAng):Angle(),zeroVec,plyAng)
-		end
-		R_ClavicleTargetAng:RotateAroundAxis(R_ClavicleTargetAng:Forward(),90)
-		--
-		local R_UpperarmPos = R_ClaviclePos + R_ClavicleTargetAng:Forward()*charinfo.clavicleLen
-		local R_TargetVec = (R_TargetPos)-R_UpperarmPos
-		local R_TargetVecLen = R_TargetVec:Length()
-		local R_TargetVecAng, R_TargetVecAngLocal
-		if not inVehicle then
-			R_TargetVecAng = R_TargetVec:Angle()
-		else
-			R_TargetVecAngLocal = WorldToLocal(R_TargetVec, zeroAng,zeroVec, plyAng):Angle()
-			_,R_TargetVecAng = LocalToWorld(Vector(),R_TargetVecAngLocal,zeroVec,plyAng)
-		end
-		--Calculate RIGHT upperarm target angle
-		local R_UpperarmTargetAng = Angle(R_TargetVecAng.pitch,R_TargetVecAng.yaw, R_TargetVecAng.roll)
-		R_UpperarmTargetAng:RotateAroundAxis(R_TargetVec, 180)
-		local tmp
-		if not inVehicle then
-			tmp = Angle(R_TargetVecAng.pitch, frame.characterYaw, 90)
-		else
-			_,tmp = LocalToWorld(Vector(),Angle(R_TargetVecAngLocal.pitch, 0, 90),zeroVec,plyAng)
-		end
-		local tpos, tang = WorldToLocal(zeroVec,tmp,zeroVec,R_TargetVecAng)
-		R_UpperarmTargetAng:RotateAroundAxis(R_UpperarmTargetAng:Forward(),tang.roll)
-		local a1 = math.deg(math.acos( (charinfo.upperArmLen*charinfo.upperArmLen + R_TargetVecLen*R_TargetVecLen - charinfo.lowerArmLen*charinfo.lowerArmLen) / (2*charinfo.upperArmLen*R_TargetVecLen) ))
-		if a1 == a1 then
-			R_UpperarmTargetAng:RotateAroundAxis(R_UpperarmTargetAng:Up(),a1)
-		end
-		local test
-		if not inVehicle then
-			test = ((R_TargetPos.z - (R_UpperarmPos.z)) + 20) *1.5
-		else
-			test = ( (R_TargetPos - R_UpperarmPos):Dot(plyAng:Up())  + 20) *1.5
-		end
-		if test < 0 then
-			test = 0
-		end
-		R_UpperarmTargetAng:RotateAroundAxis(R_TargetVec:GetNormalized(),-(30 + test))
-		--Calculate RIGHT forearm target angle
-		local R_ForearmTargetAng = Angle(R_UpperarmTargetAng.pitch,R_UpperarmTargetAng.yaw, R_UpperarmTargetAng.roll)
-		local a23 = 180 - a1 - math.deg(math.acos( (charinfo.lowerArmLen*charinfo.lowerArmLen + R_TargetVecLen*R_TargetVecLen - charinfo.upperArmLen*charinfo.upperArmLen) / (2*charinfo.lowerArmLen*R_TargetVecLen) ))
-		if a23 == a23 then
-			R_ForearmTargetAng:RotateAroundAxis(R_ForearmTargetAng:Up(),180+a23)
-		end
-		--Calculate RIGHT wrist and ulna angle
-		local tmp = Angle(R_TargetAng.pitch, R_TargetAng.yaw, R_TargetAng.roll - 90)
-		local tpos, tang = WorldToLocal(zeroVec,tmp,zeroVec,R_ForearmTargetAng)
-		local R_WristTargetAng = Angle(R_ForearmTargetAng.pitch, R_ForearmTargetAng.yaw, R_ForearmTargetAng.roll)
-		R_WristTargetAng:RotateAroundAxis(R_WristTargetAng:Forward(),tang.roll)
-		local R_UlnaTargetAng = LerpAngle(0.5,R_ForearmTargetAng,R_WristTargetAng)
-		--set absolute override angles for the relevant bones
-		boneinfo[bones.b_leftClavicle].overrideAng = L_ClavicleTargetAng
-		boneinfo[bones.b_leftUpperarm].overrideAng = L_UpperarmTargetAng
-		boneinfo[bones.b_leftHand].overrideAng = L_TargetAng
-		boneinfo[bones.b_rightClavicle].overrideAng = R_ClavicleTargetAng
-		boneinfo[bones.b_rightUpperarm].overrideAng = R_UpperarmTargetAng
-		boneinfo[bones.b_rightHand].overrideAng = R_TargetAng + Angle(0,0,180)
-		if bones.b_leftWrist and boneinfo[bones.b_leftWrist] and bones.b_leftUlna and boneinfo[bones.b_leftUlna] then
-			boneinfo[bones.b_leftForearm].overrideAng = L_ForearmTargetAng
-			boneinfo[bones.b_leftWrist].overrideAng = L_WristTargetAng
-			boneinfo[bones.b_leftUlna].overrideAng = L_UlnaTargetAng
-			boneinfo[bones.b_rightForearm].overrideAng = R_ForearmTargetAng
-			boneinfo[bones.b_rightWrist].overrideAng = R_WristTargetAng
-			boneinfo[bones.b_rightUlna].overrideAng = R_UlnaTargetAng
-		else
-			boneinfo[bones.b_leftForearm].overrideAng = L_UlnaTargetAng
-			boneinfo[bones.b_rightForearm].overrideAng = R_UlnaTargetAng
-		end
+
 		--set finger offset angles
 		for k,v in pairs(bones.fingers) do
 			if not boneinfo[v] then continue end
 			boneinfo[v].offsetAng = LerpAngle(frame["finger"..math.floor((k-1)/3+1)], g_VR.openHandAngles[k], g_VR.closedHandAngles[k])
 		end
+
 		--calculate target matrices
-		for i = 1,#g_VR.characterInfo[steamid].boneorder do
-			local bone = g_VR.characterInfo[steamid].boneorder[i]
-			local parent = g_VR.characterInfo[steamid].boneinfo[bone].parent
+		for i,bone in ipairs(g_VR.characterInfo[steamid].boneorder) do
+			local boneinfo = charinfo.boneinfo[bone]
+
 			local wpos, wang
-			if g_VR.characterInfo[steamid].boneinfo[bone].name == "ValveBiped.Bip01_L_Clavicle" then
-				wpos = L_ClaviclePos
-			elseif g_VR.characterInfo[steamid].boneinfo[bone].name == "ValveBiped.Bip01_R_Clavicle" then
-				wpos = R_ClaviclePos
+			if boneinfo.name == "ValveBiped.Bip01_L_Clavicle" then
+				wpos = charinfo.L_ClaviclePos
+			elseif boneinfo.name == "ValveBiped.Bip01_R_Clavicle" then
+				wpos = charinfo.R_ClaviclePos
 			else
-				local parentPos, parentAng = g_VR.characterInfo[steamid].boneinfo[parent].pos, g_VR.characterInfo[steamid].boneinfo[parent].ang
-				wpos, wang = LocalToWorld(g_VR.characterInfo[steamid].boneinfo[bone].relativePos, g_VR.characterInfo[steamid].boneinfo[bone].relativeAng + g_VR.characterInfo[steamid].boneinfo[bone].offsetAng, parentPos, parentAng)
+				local parentinfo = charinfo.boneinfo[boneinfo.parent]
+				wpos, wang = LocalToWorld(boneinfo.relativePos, boneinfo.relativeAng + boneinfo.offsetAng, parentinfo.pos, parentinfo.ang)
 			end
-			if g_VR.characterInfo[steamid].boneinfo[bone].overrideAng ~= nil then
-				wang = g_VR.characterInfo[steamid].boneinfo[bone].overrideAng
+
+			if boneinfo.overrideAng ~= nil then
+				wang = boneinfo.overrideAng
 			end
+
 			local mat = Matrix()
 			mat:Translate(wpos)
 			mat:Rotate(wang)
+
 			g_VR.characterInfo[steamid].boneinfo[bone].targetMatrix = mat
 			g_VR.characterInfo[steamid].boneinfo[bone].pos = wpos
 			g_VR.characterInfo[steamid].boneinfo[bone].ang = wang
