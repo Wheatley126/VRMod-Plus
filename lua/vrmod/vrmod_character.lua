@@ -59,6 +59,7 @@ if CLIENT then
 	
 	local function RecursiveBoneTable2(ent, parentbone, infotab, ordertab, notfirst)
 		local bones = notfirst and ent:GetChildBones(parentbone) or {parentbone}
+
 		for k,v in pairs(bones) do
 			local n = ent:GetBoneName(v)
 			local boneparent = ent:GetBoneParent(v)
@@ -70,6 +71,7 @@ if CLIENT then
 			infotab[v] = {name = n, pos = Vector(0,0,0), ang = Angle(0,0,0), parent = boneparent, relativePos = relpos, relativeAng = relang, offsetAng = Angle(0,0,0)}
 			ordertab[#ordertab+1] = v
 		end
+
 		for k,v in pairs(bones) do
 			RecursiveBoneTable2(ent, v, infotab, ordertab, true)
 		end

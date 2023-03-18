@@ -677,7 +677,7 @@ elseif SERVER then
 
 end
 
-// SHARED Stuff under here
+-- SHARED Stuff under here
 
 function vrmod.IsHandEmpty(pl,bLeft)
 	if !vrmod.IsPlayerInVR(pl) then return false end
@@ -694,16 +694,32 @@ function vrmod.IsHandEmpty(pl,bLeft)
 	end
 end
 
+local palmOffset = Vector(3,1.5)
+function vrmod.GetPalm(ply, bLeftHand, handPos, handAng)
+	if not handPos or not handAng then
+		if bLeftHand then
+			handPos,handAng = vrmod.GetLeftHandPose(ply)
+		else
+			handPos,handAng = vrmod.GetRightHandPose(ply)
+		end
+	end
+
+	local off = palmOffset*1
+	if bLeftHand then off[2] = -off[2] end
+
+	return LocalToWorld(off, angle_zero, handPos, handAng)
+end
+
 local WEAPON = FindMetaTable("Weapon")
 
-// Set which hand the weapon is in
-// Note that this doesn't network automatically
+-- Set which hand the weapon is in
+-- Note that this doesn't network automatically
 function WEAPON:SetVRHand(bLeftHand)
 	if !self.VRInfo then self.VRInfo = {} end
 	self.VRInfo.lefthand = bLeftHand
 end
 
-// Returns which hand the weapon is in
+-- Returns which hand the weapon is in
 function WEAPON:GetVRHand()
 	return self.VRInfo && self.VRInfo.lefthand or false
 end

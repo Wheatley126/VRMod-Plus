@@ -1,5 +1,3 @@
-scripted_ents.Register({Type = "anim", Base = "vrmod_pickup"}, "vrmod_pickup")
-
 local cvar_mass = CreateConVar("vrmod_pickup_maxmass","35",bit.bor(FCVAR_REPLICATED,FCVAR_CHEAT),"Highest mass that can be picked up, in kilograms",0)
 local cvar_range = CreateConVar("vrmod_pickup_range","72",bit.bor(FCVAR_REPLICATED,FCVAR_CHEAT),"How far you can reach",0)
 
@@ -12,9 +10,9 @@ local function ClosestPointInOBB(ent,pos)
 end
 
 local function CanGrab(e,phys,pl)
-	if CLIENT && !phys:IsValid() then
-		// Most entities won't have a PhysObj on the client	
-		if e:GetMoveType() != MOVETYPE_VPHYSICS	then return false end
+	if CLIENT && not phys:IsValid() then
+		-- Most entities won't have a PhysObj on the client	
+		if e:GetMoveType() ~= MOVETYPE_VPHYSICS then return false end
 
 		local mass
 
@@ -26,10 +24,10 @@ local function CanGrab(e,phys,pl)
 			end
 		end
 
-		return !mass or mass <= cvar_mass:GetFloat()
+		return not mass or mass <= cvar_mass:GetFloat()
 	end
 
-	return phys:IsValid() && phys:IsMoveable() && phys:GetMass() <= cvar_mass:GetFloat() && !phys:HasGameFlag(FVPHYSICS_MULTIOBJECT_ENTITY) && (e.CPPICanPickup == nil or e:CPPICanPickup(pl))
+	return phys:IsValid() && phys:IsMoveable() && phys:GetMass() <= cvar_mass:GetFloat() && not phys:HasGameFlag(FVPHYSICS_MULTIOBJECT_ENTITY) && (e.CPPICanPickup == nil or e:CPPICanPickup(pl))
 end
 
 local cylRadius = 16
@@ -56,7 +54,7 @@ local function GetGrabbableObjects(pl,pos,ang)
 		table.insert(tbl,{ent = e, point = point, priority = priority})
 	end
 
-	if !table.IsEmpty(tbl) then
+	if not table.IsEmpty(tbl) then
 		table.sort(tbl,function(a,b)
 			return a.priority < b.priority
 		end)
@@ -80,8 +78,8 @@ local function NetReadPlayer()
 end
 
 if CLIENT then
-	// TODO: Replace this with a simpler message that doesn't network pos/ang/vels
-	// (The server's should be able to use it's own copy)
+	-- TODO: Replace this with a simpler message that doesn't network pos/ang/vels
+	-- (The server's should be able to use it's own copy)
 	function vrmod.Pickup( bLeftHand, bDrop )
 		net.Start("vrmod_pickup")
 			net.WriteBool(bLeftHand)
@@ -101,9 +99,9 @@ if CLIENT then
 
 	local function GetHeldPos(self)
 		local info = self.VRPickup
-		if !info then return end
+		if not info then return end
 		local netinfo = g_VR.net[info.steamid]
-		if !netinfo then return end
+		if not netinfo then return end
 
 		local wpos, wang
 		if info.left then
@@ -115,39 +113,50 @@ if CLIENT then
 		return wpos,wang
 	end
 
-	local function HeldRenderOverride(self)
-		local wpos,wang = GetHeldPos(self)
-		if !wpos then return end
-
+	local function HeldRender(self,flags)
+		if self.VRDrawingOld then
+			self:DrawModel(flags)
+			return
+		end
 		local oldpos,oldang = self:GetRenderOrigin(),self:GetRenderAngles()
-		self:SetRenderOrigin(wpos)
-		self:SetRenderAngles(wang)
-		self:SetupBones()
 
-		self:DrawModel()
+		local wpos,wang = GetHeldPos(self)
+		if wpos then
+			self:SetRenderOrigin(wpos)
+			self:SetRenderAngles(wang)
+			self:SetupBones()
+		end
 
-		self:SetRenderOrigin(oldpos)
-		self:SetRenderAngles(oldang)
-		self:InvalidateBoneCache()
+		if self.VRPickup && self.VRPickup.oldRender then
+			self.VRDrawingOld = true
+			self.VRPickup.oldRender(self,flags)
+			self.VRDrawingOld = nil
+		else
+			self:DrawModel(flags)
+		end
+
+		if wpos then
+			self:SetRenderOrigin(oldpos)
+			self:SetRenderAngles(oldang)
+			self:InvalidateBoneCache()
+		end
 	end
 
-	local function HeldCalcPosition(self,pos,ang)
+	local function HeldCalcPos(self,pos,ang)
 		local wpos,wang = GetHeldPos(self)
 		if wpos then
 			return wpos,wang
-		else
-			return pos,ang
 		end
 	end
 
 	local function AddCreationCheck()
 		hook.Add("NotifyShouldTransmit","VRMod_RecreatePickup",function(ent,transmit)
-			if !transmit then return end
+			if not transmit then return end
 
 			local id = ent:EntIndex()
 			if vrmod.pickupList[id] && ent:GetCreationTime() == vrmod.pickupList[ent:EntIndex()].createtime then
 				local info = vrmod.pickupList[id]
-				// Remove from list in-case it's invalid now
+				-- Remove from list in-case it's invalid now
 				vrmod.pickupList[id] = nil
 
 				vrmod.OnPickup(id,info.ply,info.left,info.localPos,info.localAng,ent:GetCreationTime())
@@ -164,6 +173,7 @@ if CLIENT then
 		if g_VR.net[steamid] == nil then return end
 
 		local ent = Entity(entid)
+
 		local oldRender = ent.VRPickup && ent.VRPickup.oldRender or ent.RenderOverride
 		local oldCalcPos = ent.VRPickup && ent.VRPickup.oldCalcPos or ent.CalcAbsolutePosition
 
@@ -186,8 +196,8 @@ if CLIENT then
 
 		if ent:IsValid() && ent:GetCreationTime() == createtime then
 			ent.VRPickup = info
-			ent.RenderOverride = HeldRenderOverride
-			ent.CalcAbsolutePosition = HeldCalcPosition
+			ent.RenderOverride = HeldRender
+			ent.CalcAbsolutePosition = HeldCalcPos
 
 			if pl == LocalPlayer() then
 				g_VR[info.left && "heldEntityLeft" or "heldEntityRight"] = ent
@@ -198,17 +208,18 @@ if CLIENT then
 	end
 
 	function vrmod.OnDrop(entid,ply)
-		--print("client received drop")
 		vrmod.pickupList[entid] = nil
 
 		local ent = Entity(entid)
 		if ent:IsValid() then
-			if ent.VRPickup then
-				if ent.RenderOverride == HeldRenderOverride then
-					ent.RenderOverride = ent.VRPickup.oldRender
+			local t = ent.VRPickup
+
+			if t then
+				if ent.RenderOverride == HeldRender then
+					ent.RenderOverride = t.oldRender
 				end
-				if ent.CalcAbsolutePosition == HeldCalcPosition then
-					ent.CalcAbsolutePosition = ent.VRPickup.oldCalcPos
+				if ent.CalcAbsolutePosition == HeldCalcPos then
+					ent.CalcAbsolutePosition = t.oldCalcPos
 				end
 
 				ent.VRPickup = nil
@@ -239,8 +250,8 @@ if CLIENT then
 		end
 	end)
 
-	// TODO: Halos are broken in VR even with the current fix
-	/*local hovered = {}
+	-- TODO: Halos are broken in VR even with the current fix
+	--[[local hovered = {}
 	function g_VR.DrawPickupHalos()
 		local pl = LocalPlayer()
 
@@ -302,79 +313,78 @@ if CLIENT then
 		if pl == LocalPlayer() then
 			hook.Remove("PreDrawHalos","VRMod_PickupHalos")
 		end
-	end)*/
+	end)]]
 
 elseif SERVER then
 
 	util.AddNetworkString("vrmod_pickup")
 	
-	local pickupController
+	local function CreatePhysHook()
+		local function Simulate(ent, delta)
+			local t = ent.vrmod_pickup_info
 
-	local function CreatePickupController()
-		--print("created controller")
-		pickupController = ents.Create("vrmod_pickup")
+			if t.phys:IsAsleep() then t.phys:Wake() end
 
-		pickupController.ShadowParams = { 
-			secondstoarrive = 0.0001, --1/cv_tickrate:GetInt()
-			maxangular = 5000,
-			maxangulardamp = 5000,
-			maxspeed = 1000000,
-			maxspeeddamp = 10000,
-			dampfactor = 0.5,
-			teleportdistance = 0,
-			deltatime = 0,
-		}
-
-		function pickupController:PhysicsSimulate( phys, deltatime )
-			phys:Wake()
-			local t = phys:GetEntity().vrmod_pickup_info
 			local frame = g_VR[t.steamid] and g_VR[t.steamid].latestFrame
-			if !frame then return end
-			local handPos, handAng = LocalToWorld( t.left and frame.lefthandPos or frame.righthandPos, t.left and frame.lefthandAng or frame.righthandAng, t.ply:GetPos(), Angle()) --frame is relative to ply pos when on foot
-			self.ShadowParams.pos, self.ShadowParams.angle = LocalToWorld(t.localPos, t.localAng, handPos, handAng)
-			--this doesn't have to be inside PhysicsSimulate, we could potentially get rid of the motion controller entirely (as a micro optimization) and do this from the tick hook, but it seems to work better from here
-			phys:ComputeShadowControl(self.ShadowParams)
+			if not frame then return end
+
+			local handPos, handAng = (t.left && frame.lefthandPos or frame.righthandPos)+t.ply:GetPos(), (t.left && frame.lefthandAng or frame.righthandAng)
+			local pos, ang = LocalToWorld(t.localPos, t.localAng, handPos, handAng)
+
+			local params = {
+				secondstoarrive = engine.TickInterval(),
+				pos = pos,
+				angle = ang,
+
+				maxangular = 5000,
+				maxangulardamp = 5000,
+
+				maxspeed = 1000000,
+				maxspeeddamp = 10000,
+
+				dampfactor = 0.5,
+				teleportdistance = 0,
+				deltatime = delta
+			}
+
+			t.phys:ComputeShadowControl(params)
 		end
-		pickupController:StartMotionController()
 
 		hook.Add("Tick","vrmod_pickup",function()
-			--drop items that have become immovable or invalid
+			local delta = FrameTime()
+
 			for i,t in ipairs(vrmod.pickupList) do
-				if !IsValid(t.phys) or !t.phys:IsMoveable() or !g_VR[t.steamid] or !t.ply:Alive() or t.ply:InVehicle() then
-					--print("dropping invalid")
-					vrmod.DoDrop(t.steamid, t.left)
+				if not t.ent:IsValid() or not t.phys:IsValid() or not t.phys:IsMoveable() or not g_VR[t.steamid] or not t.ply:Alive() or t.ply:InVehicle() then
+					vrmod.DoDrop(t.steamid, t.left) --drop items that have become immovable or invalid
+				else
+					Simulate(t.ent,delta)
 				end
 			end
 		end)
 	end
 
-	local function RemovePickupController()
-		pickupController:StopMotionController()
-		pickupController:Remove()
-		pickupController = nil
-
+	local function RemovePhysHook()
 		hook.Remove("Tick","vrmod_pickup")
-		--print("removed controller")
 	end
 	
 	function vrmod.DoDrop(pl, bLeftHand, handPos, handAng, handVel, handAngVel)
-		if !IsValid(pl) then return end
+		if not IsValid(pl) then return end
 		local steamid = pl:SteamID()
 
 		for i,t in ipairs(vrmod.pickupList) do
 			if t.steamid ~= steamid or t.left ~= bLeftHand then continue end
 
-			local phys = t.phys
-			if IsValid(phys) then
+			if IsValid(t.phys) then
 				t.ent:SetCollisionGroup(t.collisionGroup)
-				pickupController:RemoveFromMotionController(phys)
+
 				if handPos then
 					local wPos, wAng = LocalToWorld(t.localPos, t.localAng, handPos, handAng)
-					phys:SetPos(wPos)
-					phys:SetAngles(wAng)
-					phys:SetVelocity( t.ply:GetVelocity() + handVel )
-					phys:AddAngleVelocity( - phys:GetAngleVelocity() + phys:WorldToLocalVector(handAngVel))
-					phys:Wake()
+					t.phys:SetPos(wPos)
+					t.phys:SetAngles(wAng)
+					t.phys:SetVelocity(t.ply:GetVelocity() + handVel)
+					t.phys:SetAngleVelocity(t.phys:WorldToLocalVector(handAngVel))
+
+					t.phys:Wake()
 				end
 			end
 
@@ -385,29 +395,35 @@ elseif SERVER then
 			net.Broadcast()
 
 			if g_VR[t.steamid] then
-				g_VR[t.steamid].heldItems[bLeftHand and 1 or 2] = nil
+				g_VR[t.steamid].heldItems[bLeftHand && 1 or 2] = nil
 			end
 
 			table.remove(vrmod.pickupList,i)
 
 			if table.IsEmpty(vrmod.pickupList) then
-				RemovePickupController()
+				RemovePhysHook()
 			end
 
-			hook.Call("VRMod_Drop", nil, t.ply, t.ent)
-			return
+			hook.Run("VRMod_Drop", t.ply, t.ent)
+			break
 		end
 	end
 
 	function vrmod.DoPickup(pl,ent,bLeft,localPos,localAng,phys)
-		if !pl:IsValid() or !ent:IsValid() then return end
+		if not pl:IsValid() or not ent:IsValid() then return end
 
 		phys = phys or ent:GetPhysicsObject()
-		if !phys:IsValid() then return end
+		if not phys:IsValid() then return end
 		local steamid = pl:SteamID()
 
-		if pickupController == nil then
-			CreatePickupController()
+		if table.IsEmpty(vrmod.pickupList) then
+			CreatePhysHook()
+		end
+
+		-- Drop item if we're already holding one
+		local held = g_VR[steamid].heldItems[bLeft && 1 or 2]
+		if held && held.ent ~= ent then
+			vrmod.DoDrop(pl,bLeft)
 		end
 
 		--if the item is already being held we should overwrite the existing pickup instead of adding a new one
@@ -421,15 +437,16 @@ elseif SERVER then
 			end
 		end
 
-		if !colGroup then --new pickup
+		if not colGroup then --new pickup
 			pl:PickupObject(ent) --this is done to trigger map logic
-			timer.Simple(0,function() pl:DropObject() end)
+			timer.Simple(0,function()
+				if pl:IsValid() then pl:DropObject() end
+			end)
 
-			pickupController:AddToMotionController(phys)
 			ent:PhysWake()
 		end
 
-		if ent.ArcticVRMagazine && ent.Pose then
+		if ent.ArcticVRMagazine && ent.Pose then -- ArcVR mags get set manually (if they implement their own grabpose we should remove this)
 			localPos, localAng = ent.Pose.pos*1,ent.Pose.ang*1
 			localPos[2] = -localPos[2]
 
@@ -438,7 +455,7 @@ elseif SERVER then
 			end
 		end
 
-		if !localPos or !localAng then
+		if not localPos or not localAng then
 			local pos,ang
 			if bLeft then
 				pos,ang = vrmod.GetLeftHandPose(pl)
@@ -480,10 +497,10 @@ elseif SERVER then
 	end
 	
 	function vrmod.AttemptPickup(ply, bLeftHand, handPos, handAng)
-		if !vrmod.IsHandEmpty(ply,bLeftHand) then return end
+		if not vrmod.IsHandEmpty(ply,bLeftHand) then return end
 
 		local steamid = ply:SteamID()
-		local pickupPoint = LocalToWorld(Vector(3, bLeftHand and -1.5 or 1.5,0), Angle(), handPos, handAng)
+		local pickupPoint = vrmod.GetPalm(ply,bLeftHand,handPos,handAng)
 
 		local grabbed
 		local lpos,lang
@@ -513,7 +530,7 @@ elseif SERVER then
 		local bLeftHand = net.ReadBool()
 		local bDrop = net.ReadBool()
 
-		if !bDrop then
+		if not bDrop then
 			vrmod.AttemptPickup(ply, bLeftHand, net.ReadVector(), net.ReadAngle())
 		else
 			vrmod.DoDrop(ply, bLeftHand, net.ReadVector(), net.ReadAngle(), net.ReadVector(), net.ReadVector())
