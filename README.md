@@ -47,7 +47,6 @@ Some of the names and functions might change before release so be prepared if yo
     * Drop object if it's been too far from the hand for too long.
 
 * ### Mod Support
-    * Properly implement the ENTITY.VRInfo table.
     * Overhaul input hook.
     * Add more PrePickup and PostPickup hooks (and possibly PostDrop).
     * Replace various instances of hook.Call with hook.Run.
