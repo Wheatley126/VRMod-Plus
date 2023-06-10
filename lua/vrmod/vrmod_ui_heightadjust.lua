@@ -33,22 +33,30 @@ function VRUtilOpenHeightMenu()
 		cam.Start({x = 0, y = 0, w = 2048, h = 2048, type = "3D", fov = g_VR.view.fov, aspect = -g_VR.view.aspectratio, origin = camPos, angles = camAng})
 			render.PushRenderTarget(rt_mirror)
 				render.Clear(200,230,255,0,true,true)
-				render.CullMode(1)
+
+				render.CullMode(MATERIAL_CULLMODE_CW)
 					local alloworig = g_VR.allowPlayerDraw
 					g_VR.allowPlayerDraw = true
+					
 					cam.Start3D() cam.End3D()
+
 					local ogEyePos = EyePos
 					EyePos = function() return Vector(0,0,0) end
+
 					local ogRenderOverride = LocalPlayer().RenderOverride
 					LocalPlayer().RenderOverride = nil
+
 					render.SuppressEngineLighting(true)
 					LocalPlayer():DrawModel()
 					render.SuppressEngineLighting(false)
+
 					EyePos = ogEyePos
 					LocalPlayer().RenderOverride = ogRenderOverride
+					
 					g_VR.allowPlayerDraw = alloworig
 					cam.Start3D() cam.End3D()
-				render.CullMode(0)
+
+				render.CullMode(MATERIAL_CULLMODE_CCW)
 			render.PopRenderTarget()
 		cam.End3D()
 	

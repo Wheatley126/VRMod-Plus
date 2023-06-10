@@ -32,6 +32,38 @@ function vrmod.SetHandsModel(mdl)
 	end
 end
 
+local ghostmat = Material("model_color")
+function vrmod.DrawHands(isForced)
+	local hands = vrmod.GetHands()
+	if not hands:IsValid() then
+		-- Recreate hands in case they get deleted in a full update
+		g_VR.RecreateHands()
+		hands = vrmod.GetHands()
+	end
+
+	if hands:IsValid() then
+		local ply = LocalPlayer()
+
+		hands:SetPos(ply:GetPos()+ply:GetCurrentViewOffset())
+
+		local a = render.GetBlend()
+		if isForced then render.ModelMaterialOverride(ghostmat) render.SetBlend(0.5) end
+		hands:DrawModel()
+		if isForced then render.ModelMaterialOverride() render.SetBlend(a) end
+	end
+end
+
+function vrmod.ShouldDrawHands()
+	local ply = LocalPlayer()
+
+	local bForced = not ply:Alive() or ply:GetNoDraw() or ply:GetObserverMode() ~= OBS_MODE_NONE or nil
+
+	local bDrawHands = bForced or hook.Run("VRMod_ShouldDrawHands")
+	if bDrawHands == nil then bDrawHands = convars.vrmod_floatinghands:GetBool() end
+
+	return bDrawHands,bForced
+end
+
 local function ResetBodygroups(testent)
 	if !testent:IsValid() then return end
 	testent:SetNoDraw(true)

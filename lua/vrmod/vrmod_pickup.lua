@@ -78,16 +78,13 @@ local function NetReadPlayer()
 end
 
 if CLIENT then
-	-- TODO: Replace this with a simpler message that doesn't network pos/ang/vels
-	-- (The server's should be able to use it's own copy)
+	-- TODO: Determine the velocity serverside
 	function vrmod.Pickup( bLeftHand, bDrop )
 		net.Start("vrmod_pickup")
 			net.WriteBool(bLeftHand)
 			net.WriteBool(bDrop or false)
 
 			local pose = bLeftHand and g_VR.tracking.pose_lefthand or g_VR.tracking.pose_righthand
-			net.WriteVector(pose.pos)
-			net.WriteAngle(pose.ang)
 
 			if bDrop then
 				net.WriteVector(pose.vel)
@@ -351,9 +348,13 @@ elseif SERVER then
 		end
 
 		hook.Add("Tick","vrmod_pickup",function()
+			if table.IsEmpty(vrmod.pickupList) then return end
 			local delta = FrameTime()
 
-			for i,t in ipairs(vrmod.pickupList) do
+			-- Reverse order to avoid issues when removing elements
+			for i = #vrmod.pickupList,1,-1 do
+				local t = vrmod.pickupList[i]
+
 				if not t.ent:IsValid() or not t.phys:IsValid() or not t.phys:IsMoveable() or not g_VR[t.steamid] or not t.ply:Alive() or t.ply:InVehicle() then
 					vrmod.DoDrop(t.steamid, t.left) --drop items that have become immovable or invalid
 				else
@@ -367,9 +368,16 @@ elseif SERVER then
 		hook.Remove("Tick","vrmod_pickup")
 	end
 	
-	function vrmod.DoDrop(pl, bLeftHand, handPos, handAng, handVel, handAngVel)
+	function vrmod.DoDrop(pl, bLeftHand, handVel, handAngVel)
 		if not IsValid(pl) then return end
 		local steamid = pl:SteamID()
+
+		local handPos,handAng
+		if bLeftHand then
+			handPos,handAng = vrmod.GetLeftHandPose(pl)
+		else
+			handPos,handAng = vrmod.GetRightHandPose(pl)
+		end
 
 		for i,t in ipairs(vrmod.pickupList) do
 			if t.steamid ~= steamid or t.left ~= bLeftHand then continue end
@@ -439,11 +447,11 @@ elseif SERVER then
 
 		if not colGroup then --new pickup
 			pl:PickupObject(ent) --this is done to trigger map logic
-			timer.Simple(0,function()
-				if pl:IsValid() then pl:DropObject() end
-			end)
-
 			ent:PhysWake()
+
+			timer.Simple(0,function()
+				if IsValid(pl) && IsValid(ent) then pl:DropObject() end
+			end)
 		end
 
 		if ent.ArcticVRMagazine && ent.Pose then -- ArcVR mags get set manually (if they implement their own grabpose we should remove this)
@@ -496,11 +504,18 @@ elseif SERVER then
 		net.Broadcast()
 	end
 	
-	function vrmod.AttemptPickup(ply, bLeftHand, handPos, handAng)
+	function vrmod.AttemptPickup(ply, bLeftHand)
 		if not vrmod.IsHandEmpty(ply,bLeftHand) then return end
 
+		-- TEMP: Avoid multiple pickups on the same tick
+		if ply.lastVRPickup == engine.TickCount() then
+			return
+		else
+			ply.lastVRPickup = engine.TickCount()
+		end
+
 		local steamid = ply:SteamID()
-		local pickupPoint = vrmod.GetPalm(ply,bLeftHand,handPos,handAng)
+		local pickupPoint = vrmod.GetPalm(ply,bLeftHand)
 
 		local grabbed
 		local lpos,lang
@@ -531,9 +546,9 @@ elseif SERVER then
 		local bDrop = net.ReadBool()
 
 		if not bDrop then
-			vrmod.AttemptPickup(ply, bLeftHand, net.ReadVector(), net.ReadAngle())
+			vrmod.AttemptPickup(ply, bLeftHand)
 		else
-			vrmod.DoDrop(ply, bLeftHand, net.ReadVector(), net.ReadAngle(), net.ReadVector(), net.ReadVector())
+			vrmod.DoDrop(ply, bLeftHand, net.ReadVector(), net.ReadVector())
 		end
 	end)
 	

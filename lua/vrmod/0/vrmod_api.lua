@@ -5,6 +5,11 @@ local latestModuleVersion = 21
 g_VR = g_VR or {}
 vrmod = vrmod or {}
 
+-- Hand Enumerations (Bitflags)
+VR_HAND_NONE = 0
+VR_HAND_LEFT = 1
+VR_HAND_RIGHT = 2
+
 local convars, convarValues = {}, {}
 function vrmod.AddCallbackedConvar(cvarName, valueName, defaultValue, flags, helptext, min, max, conversionFunc, callbackFunc)
 	valueName, flags, conversionFunc = (valueName or cvarName), (flags or FCVAR_ARCHIVE), (conversionFunc or function(val) return val end)
@@ -529,6 +534,8 @@ if CLIENT then
 	end
 
 	function vrmod.InEye(bLeft)
+		if not g_VR.view then return false end
+
 		if bLeft == true then
 			return EyePos() == g_VR.eyePosLeft
 		elseif bLeft == false then
@@ -683,7 +690,8 @@ function vrmod.IsHandEmpty(pl,bLeft)
 	if !vrmod.IsPlayerInVR(pl) then return false end
 
 	local wep = pl:GetActiveWeapon()
-	if wep:IsValid() && wep:GetClass() != "weapon_vrmod_empty" && wep:GetVRHand() == bLeft then
+	local handFlag = bLeft && VR_HAND_LEFT or VR_HAND_RIGHT
+	if wep:IsValid() && bit.band(wep:GetVRHands(),handFlag) ~= 0 then
 		return false
 	end
 
@@ -714,18 +722,19 @@ local WEAPON = FindMetaTable("Weapon")
 
 -- Set which hand the weapon is in
 -- Note that this doesn't network automatically
-function WEAPON:SetVRHand(bLeftHand)
-	if !self.VRInfo then self.VRInfo = {} end
-	self.VRInfo.lefthand = bLeftHand
+function WEAPON:SetVRHands(hands)
+	if not self.VRInfo then self.VRInfo = {} end
+	self.VRInfo.inHands = hands
 end
 
 -- Returns which hand the weapon is in
-function WEAPON:GetVRHand()
-	return self.VRInfo && self.VRInfo.lefthand or false
+-- Defaults to the right hand
+function WEAPON:GetVRHands()
+	return self.VRInfo && self.VRInfo.inHands or VR_HAND_RIGHT
 end
 
 
-// Hook Overrides (might get replace this)
+-- Hook Overrides (might replace this)
 local hookTranslations = {
 	VRUtilEventTracking			= "VRMod_Tracking",
 	VRUtilEventInput			= "VRMod_Input",

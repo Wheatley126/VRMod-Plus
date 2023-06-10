@@ -7,6 +7,8 @@
 
 --]]
 
+-- Temporarily disabled to avoid issues. Might delete this file later
+--[[
 if CLIENT then
 
 	net.Receive("vrmod_pmchange",function()
@@ -40,4 +42,4 @@ elseif SERVER then
 	end)
 
 
-end
+end]]

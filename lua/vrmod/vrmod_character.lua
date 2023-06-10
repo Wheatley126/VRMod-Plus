@@ -490,7 +490,7 @@ if CLIENT then
 			if g_VR.CharacterInit(ply) == false then return end
 		end
 
-		local hide = vrmod.InEye() && ply:GetViewEntity() == ply
+		local hide = vrmod.InEye() && GetViewEntity() == ply
 		local selfDraw = ply == LocalPlayer()
 		--hide head in first person
 		if selfDraw then
@@ -518,7 +518,6 @@ if CLIENT then
 			UpdateIK(ply)
 			updatedPlayers[steamid] = 1
 		end
-		--
 
 		local veh = ply:GetVehicle()
 		if veh:IsValid() && veh:GetClass() ~= "prop_vehicle_prisoner_pod" then return end
@@ -530,22 +529,14 @@ if CLIENT then
 			end
 		end
 
+		if selfDraw then
+			local drawHands,forced = vrmod.ShouldDrawHands()
+			if drawHands && (hide or forced) then
+				vrmod.DrawHands(forced)
+				ProtectedCall(function() hook.Run("PostPlayerDraw",ply) end)
 
-		if selfDraw && hide && convars.vrmod_floatinghands:GetBool() then
-			local hands = vrmod.GetHands()
-			if !hands:IsValid() then
-				// Recreate hands in case they get deleted in a full update
-				g_VR.RecreateHands()
-				hands = g_VR.hands
+				return true
 			end
-
-			if hands:IsValid() then
-				hands:SetPos(ply:GetPos()+ply:GetCurrentViewOffset())
-				hands:DrawModel()
-			end
-			hook.Run("PostPlayerDraw",ply)
-
-			return true
 		end
 	end
 	-------------------------------------------------------------
