@@ -515,7 +515,7 @@ elseif SERVER then
 		end
 
 		local steamid = ply:SteamID()
-		local pickupPoint = vrmod.GetPalm(ply,bLeftHand)
+		local pickupPoint,handAng = vrmod.GetPalm(ply,bLeftHand)
 
 		local grabbed
 		local lpos,lang
