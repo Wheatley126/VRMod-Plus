@@ -460,7 +460,7 @@ local function Calibrate()
 	local ply = LocalPlayer()
 	ply.RenderOverride = function() end
 	local calibrationModel = ClientsideModel(ply.vrmod_pm or ply:GetModel())
-	calibrationModel:SetNoDraw(true)
+	--calibrationModel:SetNoDraw(true)
 	calibrationModel:SetPos( Vector(g_VR.tracking.hmd.pos.x, g_VR.tracking.hmd.pos.y, ply:GetPos().z) )
 	calibrationModel:SetAngles( Angle(0, g_VR.tracking.hmd.ang.yaw, 0) )
 	hook.Add("PostDrawTranslucentRenderables","fbt_test_showtrackers",function(depth, sky)
