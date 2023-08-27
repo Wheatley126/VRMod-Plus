@@ -90,7 +90,7 @@ local function start()
 	local followVec = zeroVec
 	local originVehicleLocalPos, originVehicleLocalAng = zeroVec, zeroAng
 	
-	vrmod.AddInGameMenuItem("Reset Vehicle View", 3, 1, function()
+	vrmod.AddInGameMenuItem("#vrmod.quicksettings.vehiclereset", 3, 1, function()
 		originVehicleLocalPos = nil
 	end)
 	
@@ -198,17 +198,16 @@ local function stop()
 	--
 	hook.Remove("VRMod_PreRender","teleport")
 	if IsValid(tpBeamEnt) then tpBeamEnt:Remove() end
-	vrmod.RemoveInGameMenuItem("Reset Vehicle View")
+	vrmod.RemoveInGameMenuItem("#vrmod.quicksettings.vehiclereset")
 end
 
 local function options( panel )
-	
 	local tmp = vgui.Create("DCheckBoxLabel")
 	panel:Add(tmp)
 	tmp:Dock( TOP )
 	tmp:DockMargin( 5, 0, 0, 5 )
 	tmp:SetDark(true)
-	tmp:SetText("Controller oriented locomotion")
+	tmp:SetText("#vrmod.settings.loco.controlleroriented")
 	tmp:SetChecked(convarValues.controllerOriented)
 	function tmp:OnChange(val)
 		convars.vrmod_controlleroriented:SetBool(val)
@@ -219,7 +218,7 @@ local function options( panel )
 	tmp:Dock( TOP )
 	tmp:DockMargin( 5, 0, 0, 0 )
 	tmp:SetDark(true)
-	tmp:SetText("Smooth turning")
+	tmp:SetText("#vrmod.settings.loco.smoothturn")
 	tmp:SetChecked(convarValues.smoothTurn)
 	function tmp:OnChange(val)
 		convars.vrmod_smoothturn:SetBool(val)
@@ -234,7 +233,7 @@ local function options( panel )
 	tmp:SetDecimals(0)
 	tmp:SetValue(convarValues.smoothTurnRate)
 	tmp:SetDark(true)
-	tmp:SetText("Smooth turn rate")
+	tmp:SetText("#vrmod.settings.loco.smoothturnrate")
 	function tmp:OnValueChanged(val)
 		convars.vrmod_smoothturnrate:SetInt(val)
 	end
@@ -243,7 +242,7 @@ end
 
 timer.Simple(0,function()
 	vrmod.AddLocomotionOption("default", start, stop, options)
-	vrmod.AddInGameMenuItem("Toggle Noclip", 2, 1, function()
+	vrmod.AddInGameMenuItem("#vrmod.quicksettings.noclip", 2, 1, function()
 		LocalPlayer():ConCommand("noclip")
 	end)
 end)

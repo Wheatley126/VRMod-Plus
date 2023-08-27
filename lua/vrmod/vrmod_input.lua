@@ -11,7 +11,7 @@ if CLIENT then
 
 	hook.Add("VRMod_Input","vrutil_hook_defaultinput",function( action, pressed )
 
-		if hook.Call("VRMod_AllowDefaultAction", nil, action) == false then return end
+		if hook.Run("VRMod_AllowDefaultAction", action) == false then return end
 		
 		if (action == "boolean_primaryfire" or action == "boolean_turret") and not g_VR.menuFocus then
 			LocalPlayer():ConCommand(pressed and "+attack" or "-attack")

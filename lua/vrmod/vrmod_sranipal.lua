@@ -144,7 +144,7 @@ if CLIENT then
 			end)
 		end
 		--
-		vrmod.AddInGameMenuItem("Flexbinder", 0, 1, function()
+		vrmod.AddInGameMenuItem("#vrmod.quicksettings.flex", 0, 1, function()
 			
 			local ang = Angle(0,g_VR.tracking.hmd.ang.yaw-90,45)
 			local pos, ang = WorldToLocal( g_VR.tracking.hmd.pos + Vector(0,0,-20) + Angle(0,g_VR.tracking.hmd.ang.yaw,0):Forward()*30 + ang:Forward()*1366*-0.02 + ang:Right()*768*-0.02, ang, g_VR.origin, g_VR.originAngle)

@@ -21,8 +21,8 @@ vrmod.AddCallbackedConvar("vrmod_seatedoffset", nil, "0", nil, nil, nil, nil, to
 vrmod.AddCallbackedConvar("vrmod_seated", nil, "0", nil, nil, nil, nil, tobool, function(val) updateOffsetHook() end)
 
 hook.Add("VRMod_Menu","vrmod_n_seated",function(frame)
-	frame.SettingsForm:CheckBox("Enable seated offset", "vrmod_seated")
-	frame.SettingsForm:ControlHelp("Adjust from height adjustment menu")
+	frame.SettingsForm:CheckBox("#vrmod.settings.seated", "vrmod_seated")
+	frame.SettingsForm:ControlHelp("#vrmod.settings.seated.info")
 end)
 
 hook.Add("VRMod_Start","seatedmode",function(ply)

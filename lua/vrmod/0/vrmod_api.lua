@@ -502,20 +502,22 @@ if CLIENT then
 		g_VR.originAngle = ang
 	end
 	
-	function vrmod.AddInGameMenuItem( name, slot, slotpos, func )
-		local index = #g_VR.menuItems+1
-		for i = 1,#g_VR.menuItems do
-			if g_VR.menuItems[i].name == name then
-				index = i
+	function vrmod.AddInGameMenuItem(name, slot, slotpos, func)
+		local tbl = { name = name, slot = slot, slotPos = slotpos, func = func }
+
+		for i,t in ipairs(g_VR.menuItems) do
+			if t.name == name then
+				g_VR.menuItems[i] = tbl
+				return
 			end
 		end
-		g_VR.menuItems[index] = { name = name, slot = slot, slotPos = slotpos, func = func }
+		table.insert(g_VR.menuItems,tbl)
 	end
 	
-	function vrmod.RemoveInGameMenuItem( name )
-		for i = 1,#g_VR.menuItems do
-			if g_VR.menuItems[i].name == name then
-				table.remove( g_VR.menuItems, i )
+	function vrmod.RemoveInGameMenuItem(name)
+		for i,t in ipairs(g_VR.menuItems) do
+			if t.name == name then
+				table.remove(g_VR.menuItems,i)
 				return
 			end
 		end

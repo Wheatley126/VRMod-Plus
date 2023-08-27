@@ -7,7 +7,7 @@ local function CreateMapBrowserWindow()
 	window = vgui.Create("DFrame")
 	window:SetPos(0,0)
 	window:SetSize(915,512)
-	window:SetTitle("VRMod Map Browser")
+	window:SetTitle("#main_menu.maps")
 	window:MakePopup()
 	
 	function window:Paint(w,h)
@@ -233,7 +233,7 @@ local function CreateMapBrowserWindow()
 	return window
 end
 
-vrmod.AddInGameMenuItem("Map Browser", 0, 0, function()
+vrmod.AddInGameMenuItem("#vrmod.quicksettings.maps", 0, 0, function()
 	CreateMapBrowserWindow()
 	hook.Add("VRMod_OpenQuickMenu","closemapbrowser",function()
 		hook.Remove("VRMod_OpenQuickMenu","closemapbrowser")

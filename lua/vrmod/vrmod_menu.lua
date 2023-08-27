@@ -13,7 +13,7 @@ local function OpenMenu()
 
 	frame = vgui.Create("DFrame")
 	frame:SetSize(400,485)
-	frame:SetTitle("VRMod Menu")
+	frame:SetTitle("#vrmod.settings.title")
 	frame:MakePopup()
 	frame:Center()
 	
@@ -127,7 +127,7 @@ if convars.vrmod_showonstartup:GetBool() then
 	end)
 end
 
-vrmod.AddInGameMenuItem("Settings", 4, 0, function()
+vrmod.AddInGameMenuItem("#vrmod.quicksettings.settings", 4, 0, function()
 	OpenMenu()
 	hook.Add("VRMod_OpenQuickMenu","closesettings",function()
 		hook.Remove("VRMod_OpenQuickMenu","closesettings")

@@ -1,6 +1,6 @@
 if SERVER then return end
 
-vrmod.AddInGameMenuItem("Spawn Menu", 2, 0, function()
+vrmod.AddInGameMenuItem("#vrmod.quicksettings.spawnmenu", 2, 0, function()
 	if !IsValid(g_SpawnMenu) then return end
 
 	g_SpawnMenu:Open()
@@ -21,7 +21,7 @@ hook.Add("VRMod_Exit","restore_spawnmenu",function(ply)
 	end)
 end)
 
-vrmod.AddInGameMenuItem("Context Menu", 3, 0, function()
+vrmod.AddInGameMenuItem("#vrmod.quicksettings.context", 3, 0, function()
 	if !IsValid(g_ContextMenu) then return end
 
 	g_ContextMenu:Open()
@@ -32,7 +32,7 @@ vrmod.AddInGameMenuItem("Context Menu", 3, 0, function()
 	end)
 end)
 
-vrmod.AddInGameMenuItem("Change Hands", 4, 1, function()
+vrmod.AddInGameMenuItem("#vrmod.quicksettings.hands", 4, 1, function()
 	g_VR.OpenHandsMenu()
 
 	hook.Add("VRMod_OpenQuickMenu","close_handsmenu",function()

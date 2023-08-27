@@ -17,12 +17,12 @@ end
 if CLIENT then
 
 	g_VR.scale = 0
-	g_VR.origin = Vector(0,0,0)
-	g_VR.originAngle = Angle(0,0,0)
+	g_VR.origin = Vector()
+	g_VR.originAngle = Angle()
 	g_VR.viewModel = nil --this will point to either the viewmodel, worldmodel or nil
 	g_VR.viewModelMuzzle = nil
-	g_VR.viewModelPos = Vector(0,0,0)
-	g_VR.viewModelAng = Angle(0,0,0)
+	g_VR.viewModelPos = Vector()
+	g_VR.viewModelAng = Angle()
 	g_VR.active = false
 	g_VR.threePoints = false --hmd + 2 controllers
 	g_VR.sixPoints = false --hmd + 2 controllers + 3 trackers
@@ -63,7 +63,7 @@ if CLIENT then
 	end)
 	vrmod.AddCallbackedConvar("vrmod_haptics",nil,"1")
 
-	// Override original function to allow it to be toggled
+	-- Override original function to allow it to be toggled
 	VRMOD_TriggerHaptic = function(actionName, delay, duration, frequency, amplitude)
 		if convars.vrmod_haptics:GetBool() then
 			g_VR.oldHapticFunc(actionName,delay,duration,frequency,amplitude)
@@ -85,12 +85,12 @@ if CLIENT then
 	
 	hook.Add("VRMod_Menu","vrmod_options",function(frame)
 		local form = frame.SettingsForm
-		form:CheckBox("Use floating hands", "vrmod_floatinghands")
-		form:CheckBox("Use weapon world models", "vrmod_useworldmodels")
-		form:CheckBox("Add laser pointer to tools/weapons", "vrmod_laserpointer")
-		form:CheckBox("Enable haptics", "vrmod_haptics")
+		form:CheckBox("#vrmod.settings.floatinghands", "vrmod_floatinghands")
+		form:CheckBox("#vrmod.settings.useworldmodels", "vrmod_useworldmodels")
+		form:CheckBox("#vrmod.settings.laserpointer", "vrmod_laserpointer")
+		form:CheckBox("#vrmod.settings.haptics", "vrmod_haptics")
 		--
-		local tmp = form:CheckBox("Show height adjustment menu", "vrmod_heightmenu")
+		local tmp = form:CheckBox("#vrmod.settings.heightmenu", "vrmod_heightmenu")
 		local checkTime = 0
 		function tmp:OnChange(checked)
 			if checked and SysTime()-checkTime < 0.1 then --only triggers when checked manually (not when using reset button)
@@ -99,12 +99,12 @@ if CLIENT then
 			checkTime = SysTime()
 		end
 		--
-		form:CheckBox("Alternative head angle manipulation method", "vrmod_althead")
-		form:ControlHelp("Less precise, compatibility for jigglebones")
-		form:CheckBox("Automatically start VR after map loads", "vrmod_autostart")
-		form:CheckBox("Replace climbing mechanics (when available)", "vrmod_climbing")
-		form:CheckBox("Replace door use mechanics (when available)", "vrmod_doors")
-		form:CheckBox("Enable engine postprocessing", "vrmod_postprocess")
+		form:CheckBox("#vrmod.settings.althead", "vrmod_althead")
+		form:ControlHelp("#vrmod.settings.althead.info")
+		form:CheckBox("#vrmod.settings.autostart", "vrmod_autostart")
+		form:CheckBox("#vrmod.settings.climbing", "vrmod_climbing")
+		form:CheckBox("#vrmod.settings.doors", "vrmod_doors")
+		form:CheckBox("#vrmod.settings.postprocess", "vrmod_postprocess")
 		--
 		local panel = vgui.Create( "DPanel" )
 		panel:SetSize( 300, 30 )
@@ -112,14 +112,14 @@ if CLIENT then
 		local dlabel = vgui.Create( "DLabel", panel )
 		dlabel:SetSize(100,30)
 		dlabel:SetPos(0,-3)
-		dlabel:SetText( "Desktop view:" )
+		dlabel:SetText("#vrmod.settings.desktop")
 		dlabel:SetColor(Color(0,0,0))
 		local DComboBox = vgui.Create( "DComboBox",panel )
 		DComboBox:Dock( TOP )
 		DComboBox:DockMargin( 70, 0, 0, 5 )
-		DComboBox:AddChoice( "none" )
-		DComboBox:AddChoice( "left eye" )
-		DComboBox:AddChoice( "right eye" )
+		DComboBox:AddChoice("#vrmod.settings.desktop.none")
+		DComboBox:AddChoice("#vrmod.settings.desktop.left")
+		DComboBox:AddChoice("#vrmod.settings.desktop.right")
 		DComboBox.OnSelect = function( self, index, value )
 			convars.vrmod_desktopview:SetInt(index)
 		end
@@ -132,11 +132,11 @@ if CLIENT then
 		end
 		form:AddItem(panel)
 		--
-		form:Button("Edit custom controller input actions","vrmod_actioneditor")
-		form:Button("Reset settings to default","vrmod_reset")
+		form:Button("#vrmod.settings.actioneditor","vrmod_actioneditor")
+		form:Button("#vrmod.settings.reset","vrmod_reset")
 		--
 		local offsetForm = vgui.Create("DForm",form)
-		offsetForm:SetName("Controller offsets")
+		offsetForm:SetName("#vrmod.settings.offsets")
 		offsetForm:Dock(TOP)
 		offsetForm:DockMargin(10,10,10,0)
 		offsetForm:DockPadding(0,0,0,0)
@@ -147,11 +147,11 @@ if CLIENT then
 		tmp.PerformLayout = function(self) self.TextArea:SetWide(30) self.Label:SetWide(30) end
 		tmp = offsetForm:NumSlider("Z","vrmod_controlleroffset_z",-30,30,0)
 		tmp.PerformLayout = function(self) self.TextArea:SetWide(30) self.Label:SetWide(30) end
-		tmp = offsetForm:NumSlider("Pitch","vrmod_controlleroffset_pitch",-180,180,0)
+		tmp = offsetForm:NumSlider("#vrmod.settings.angle.pitch","vrmod_controlleroffset_pitch",-180,180,0)
 		tmp.PerformLayout = function(self) self.TextArea:SetWide(30) self.Label:SetWide(30) end
-		tmp = offsetForm:NumSlider("Yaw","vrmod_controlleroffset_yaw",-180,180,0)
+		tmp = offsetForm:NumSlider("#vrmod.settings.angle.yaw","vrmod_controlleroffset_yaw",-180,180,0)
 		tmp.PerformLayout = function(self) self.TextArea:SetWide(30) self.Label:SetWide(30) end
-		tmp = offsetForm:NumSlider("Roll","vrmod_controlleroffset_roll",-180,180,0)
+		tmp = offsetForm:NumSlider("#vrmod.settings.angle.roll","vrmod_controlleroffset_roll",-180,180,0)
 		tmp.PerformLayout = function(self) self.TextArea:SetWide(30) self.Label:SetWide(30) end
 		local tmp = offsetForm:Button("Apply offsets","")
 		function tmp:OnReleased()
@@ -268,6 +268,24 @@ if CLIENT then
 		return math.pow(2, math.ceil(math.log(x,2)))
 	end
 
+	local function DrawEye(isRight)
+		render.PushRenderTarget(g_VR.rtEye)
+			render.Clear(0,0,0,255,true,true)
+			render.RenderView(g_VR.view)
+		render.PopRenderTarget()
+
+		local w,h = g_VR.rt:Width()/2,g_VR.rt:Height()
+		render.PushRenderTarget(g_VR.rt,isRight && w or 0,0,w,h)
+			render.Clear(0,0,0,255,true,true)
+
+			cam.Start2D()
+			surface.SetDrawColor(255,255,255)
+			surface.SetMaterial(g_VR.rtEyeMat)
+			surface.DrawTexturedRect(0,0,w,h)
+			cam.End2D()
+		render.PopRenderTarget()
+	end
+
 	
 	function VRUtilClientStart()
 		local error = vrmod.GetStartupError()
@@ -284,15 +302,23 @@ if CLIENT then
 		end
 		
 		local displayInfo = VRMOD_GetDisplayInfo(1,10)
-		
+
 		local rtWidth, rtHeight = displayInfo.RecommendedWidth*2, displayInfo.RecommendedHeight
 		if system.IsLinux() then
 			rtWidth, rtHeight = math.min(4096,pow2ceil(rtWidth)), math.min(4096,pow2ceil(rtHeight)) --todo pow2ceil might not be necessary
 		end
 		
 		VRMOD_ShareTextureBegin()
-		g_VR.rt = GetRenderTarget( "vrmod_rt".. tostring(SysTime()), rtWidth, rtHeight)
+		g_VR.rt = GetRenderTarget("vrmod_rt".. tostring(SysTime()), rtWidth, rtHeight)
 		VRMOD_ShareTextureFinish()
+
+		g_VR.rtEye = GetRenderTarget("vrmod_rtEye_"..(rtWidth/2).."x"..(rtHeight),rtWidth/2,rtHeight)
+		if not g_VR.rtEyeMat then
+			g_VR.rtEyeMat = CreateMaterial("vrmod_rtEyeMat","UnlitGeneric",{ ["$basetexture"] = g_VR.rtEye:GetName() })
+		else
+			-- Just update the rt name
+			g_VR.rtEyeMat:SetTexture("$basetexture",g_VR.rtEye:GetName())
+		end
 		
 		--
 		local displayCalculations = { left = {}, right = {}}
@@ -451,10 +477,10 @@ if CLIENT then
 			end
 			
 			--
-			if !system.HasFocus() or #g_VR.errorText != 0 then
+			if not system.HasFocus() or #g_VR.errorText ~= 0 then
 				render.Clear(0,0,0,255,true,true)
 				cam.Start2D()
-					local text = !system.HasFocus() and "Please focus the game window" or g_VR.errorText
+					local text = not system.HasFocus() and "Please focus the game window" or g_VR.errorText
 					draw.DrawText( text, "DermaLarge", ScrW() / 2, ScrH() / 2, Color( 255,255,255, 255 ), TEXT_ALIGN_CENTER )
 				cam.End2D()
 
@@ -468,13 +494,13 @@ if CLIENT then
 			local wep = pl:GetActiveWeapon()
 
 			local drawWorld = vrmod.GetWeaponDrawMode(wep) != VR_WEPDRAWMODE_VIEWMODEL
-			if drawWorld != prevWepDrawWorld then
+			if drawWorld ~= prevWepDrawWorld then
 				vrmod.UpdateViewmodelInfo(wep,true)
 				prevWepDrawWorld = drawWorld
 			end
 
 			local wepclass = IsValid(wep) && wep:GetClass() or ""
-			if wepclass != g_VR.lastUpdatedWeapon then
+			if wepclass ~= g_VR.lastUpdatedWeapon then
 				vrmod.UpdateViewmodelInfo(wep)
 			end
 
@@ -483,13 +509,13 @@ if CLIENT then
 				g_VR.viewModelPos = pos
 				g_VR.viewModelAng = ang
 
-				// TODO: Add an offset in worldmodel mode to fix muzzle effects
+				-- TODO: Add an offset in worldmodel mode to fix muzzle effects
 				if drawWorld then
 				end
 			end
 
 			if IsValid(g_VR.viewModel) then
-				if !drawWorld then
+				if not drawWorld then
 					g_VR.viewModel:SetPos(g_VR.viewModelPos)
 					g_VR.viewModel:SetAngles(g_VR.viewModelAng)
 					g_VR.viewModel:SetupBones()
@@ -533,48 +559,50 @@ if CLIENT then
 			
 			--
 			g_VR.view.origin = g_VR.view.origin + g_VR.view.angles:Forward()*-(eyez*g_VR.scale)
-			g_VR.eyePosLeft = g_VR.view.origin + g_VR.view.angles:Right()*-(ipd*0.5*g_VR.scale)
-			g_VR.eyePosRight = g_VR.view.origin + g_VR.view.angles:Right()*(ipd*0.5*g_VR.scale)
+			g_VR.eyePosLeft = g_VR.view.origin + g_VR.view.angles:Right()*-(ipd/2*g_VR.scale)
+			g_VR.eyePosRight = g_VR.view.origin + g_VR.view.angles:Right()*(ipd/2*g_VR.scale)
 
-			render.PushRenderTarget( g_VR.rt )
+			-- Rendering starts here
+			VRUtilRenderMenuRTs() -- Render panels and custom menus
 
-				VRUtilRenderMenuRTs()
-
-				-- left
-				g_VR.view.origin = g_VR.eyePosLeft
-				g_VR.view.x = 0
-				g_VR.view.fov = hfovLeft
-				g_VR.view.aspectratio = aspectLeft
-				hook.Call("VRMod_PreRender")
-				render.RenderView(g_VR.view)
-				-- right
-				
-				g_VR.view.origin = g_VR.eyePosRight
-				g_VR.view.x = rtWidth/2
-				g_VR.view.fov = hfovRight
-				g_VR.view.aspectratio = aspectRight
-				hook.Call("VRMod_PreRenderRight")
-				render.RenderView(g_VR.view)
-				--
-				if !LocalPlayer():Alive() then
-					cam.Start2D()
-					surface.SetDrawColor( 255, 0, 0, 128 )
-					surface.DrawRect( 0, 0, rtWidth, rtHeight )
-					cam.End2D()
-				end
+			-- left
+			g_VR.view.origin = g_VR.eyePosLeft
+			--g_VR.view.x = 0
+			g_VR.view.fov = hfovLeft
+			g_VR.view.aspect = aspectLeft
+			hook.Run("VRMod_PreRender")
+			DrawEye(false)
+			--render.RenderView(g_VR.view)
+			-- right
 			
+			g_VR.view.origin = g_VR.eyePosRight
+			--g_VR.view.x = rtWidth/2
+			g_VR.view.fov = hfovRight
+			g_VR.view.aspect = aspectRight
+			hook.Run("VRMod_PreRenderRight")
+			DrawEye(true)
+			--render.RenderView(g_VR.view)
 
-			render.PopRenderTarget( g_VR.rt )
+			-- Draw the red death overlay
+			if not LocalPlayer():Alive() then
+				render.PushRenderTarget(g_VR.rt)
+					cam.Start2D()
+					surface.SetDrawColor(255, 0, 0, 128)
+					surface.DrawRect(0, 0, rtWidth, rtHeight)
+					cam.End2D()
+				render.PopRenderTarget()
+			end
+
+			hook.Run("VRMod_PostRender")
 			
 			if desktopView > 1 then
 				surface.SetDrawColor(255,255,255,255)
 				surface.SetMaterial(mat_rt)
+				-- TODO: Why do they use cullmodes for this?
 				render.CullMode(MATERIAL_CULLMODE_CW)
 				surface.DrawTexturedRectUV(-1, -1, 2, 2, cropHorizontalOffset, 1-cropVerticalMargin, 0.5+cropHorizontalOffset, cropVerticalMargin)
 				render.CullMode(MATERIAL_CULLMODE_CCW)
 			end
-			
-			hook.Call("VRMod_PostRender")
 			
 			--return true to override default scene rendering
 			return true
@@ -583,10 +611,10 @@ if CLIENT then
 		overrideConvar("viewmodel_fov", GetConVar("fov_desired"):GetString())
 
 		hook.Add("CalcViewModelView","vrutil_hook_calcviewmodelview",function(wep, vm, oldPos, oldAng, pos, ang)
-			/*if wep:IsValid() && g_VR.viewModelMuzzle && vrmod.GetWeaponDrawMode(wep) != VR_WEPDRAWMODE_VIEWMODEL then
+			--[[if wep:IsValid() && g_VR.viewModelMuzzle && vrmod.GetWeaponDrawMode(wep) ~= VR_WEPDRAWMODE_VIEWMODEL then
 				local pos,ang = LocalToWorld(Vector(-7,-5,4),angle_zero,g_VR.viewModelPos,g_VR.viewModelAng)
 				return pos,ang
-			end*/
+			end]]
 
 			return g_VR.viewModelPos, g_VR.viewModelAng
 		end)

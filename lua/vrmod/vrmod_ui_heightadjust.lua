@@ -30,7 +30,7 @@ function VRUtilOpenHeightMenu()
 		local camAng = EyeAngles()
 		camAng = Angle(camAng.pitch, mirrorAng.yaw + (mirrorAng.yaw - camAng.yaw), 180-camAng.roll)
 	
-		cam.Start({x = 0, y = 0, w = 2048, h = 2048, type = "3D", fov = g_VR.view.fov, aspect = -g_VR.view.aspectratio, origin = camPos, angles = camAng})
+		cam.Start({x = 0, y = 0, w = 2048, h = 2048, type = "3D", fov = g_VR.view.fov, aspect = -g_VR.view.aspect, origin = camPos, angles = camAng})
 			render.PushRenderTarget(rt_mirror)
 				render.Clear(200,230,255,0,true,true)
 

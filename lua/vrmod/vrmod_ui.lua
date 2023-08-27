@@ -4,7 +4,7 @@ if CLIENT then
 	g_VR.menuCursorX = 0
 	g_VR.menuCursorY = 0
 
-	// The initial size of this material affects how RTs are scaled with it so we use a texture the size of the screen
+	-- The initial size of this material affects how RTs are scaled with it so we use a texture the size of the screen
 	local mat_panel = CreateMaterial("vrmod_mat_ui","UnlitGeneric",{
 		["$basetexture"] = "_rt_FullFrameFB",
 		["$translucent"] = 1
@@ -82,7 +82,7 @@ if CLIENT then
 		for k,v in ipairs(menuOrder) do
 			k = v.uid
 			if v.panel then
-				if !IsValid(v.panel) or !v.panel:IsVisible() then
+				if not IsValid(v.panel) or not v.panel:IsVisible() then
 					VRUtilMenuClose(k)
 					continue
 				end
@@ -108,8 +108,8 @@ if CLIENT then
 				surface.DrawTexturedRect(0,0,v.width,v.height)
 
 				--debug outline
-				//surface.SetDrawColor(255,0,0,255)
-				//surface.DrawOutlinedRect(0,0,v.width,v.height)
+				--surface.SetDrawColor(255,0,0,255)
+				--surface.DrawOutlinedRect(0,0,v.width,v.height)
 			cam.End3D2D()
 			cam.IgnoreZ(false)
 

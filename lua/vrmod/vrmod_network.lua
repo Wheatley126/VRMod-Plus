@@ -448,7 +448,7 @@ if CLIENT then
 			hook.Remove("PreRender","vrutil_hook_netlerp")
 		end
 
-		// TODO: Skip this for LocalPlayer and do it clientside
+		-- TODO: Skip this for LocalPlayer and do it clientside
 		hook.Run("VRMod_Exit", ply, steamid)
 	end)
 	

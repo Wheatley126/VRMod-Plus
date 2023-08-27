@@ -560,9 +560,9 @@ end
 	
 
 hook.Add("VRMod_OpenQuickMenu", "fbtcal", function()
-	vrmod.RemoveInGameMenuItem("Calibrate Full-body Tracking")
+	vrmod.RemoveInGameMenuItem("#vrmod.quicksettings.fbt")
 	if g_VR.sixPoints then
-		vrmod.AddInGameMenuItem("Calibrate Full-body Tracking", 5, 0, function()
+		vrmod.AddInGameMenuItem("#vrmod.quicksettings.fbt", 5, 0, function()
 			Calibrate()
 		end)
 	end

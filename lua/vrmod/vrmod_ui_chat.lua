@@ -249,7 +249,7 @@ if CLIENT then
 		addChatMessage( chatLog[#chatLog] )
 	end
 	
-	vrmod.AddInGameMenuItem("Chat", 1, 0, function()
+	vrmod.AddInGameMenuItem("#vrmod.quicksettings.chat", 1, 0, function()
 		ToggleChat()
 	end)
 	

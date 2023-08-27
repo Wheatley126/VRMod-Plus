@@ -1,15 +1,16 @@
---
 if SERVER then return end
 
 local function CurvedPlane(w,h,segments,degrees, matrix)
 	matrix = matrix or Matrix()
 	degrees = math.rad(degrees)
+
 	local mesh = Mesh()
 	local verts = {}
 	local startAng = (math.pi-degrees)/2
-	local segLen = 0.5*math.tan(degrees/segments)
+	local segLen = math.tan(degrees/segments)/2
 	local scale = w/(segLen*segments)
-	local zoffset = math.sin(startAng)*0.5 * scale
+	local zoffset = math.sin(startAng)/2 * scale
+
 	for i = 0,segments-1 do
 		local fraction = i/segments
 		local nextFraction = (i+1)/segments
@@ -26,6 +27,7 @@ local function CurvedPlane(w,h,segments,degrees, matrix)
 		verts[#verts+1] = { pos = matrix*Vector( x1, h, z1 ), u = fraction, v = 1 }
 		verts[#verts+1] = { pos = matrix*Vector( x1,  0,  z1 ), u = fraction, v = 0 }
 	end
+
 	mesh:BuildFromTriangles(verts)
 	return mesh
 end
@@ -49,22 +51,20 @@ end
 
 local function AddHUD()
 	RemoveHUD()
-	if !g_VR.active or !convarValues.vrmod_hud then return end
+	if not g_VR.active or not convarValues.vrmod_hud then return end
 
 	local mtx = Matrix()
 	mtx:Translate(Vector(0,0,768*convarValues.vrmod_hudscale/2))
 	mtx:Rotate(Angle(0,-90,-90))
 
-	local meshName = convarValues.vrmod_hudscale.."_"..convarValues.vrmod_hudcurve
-	hudMeshes[meshName] = hudMeshes[meshName] or CurvedPlane(1366*convarValues.vrmod_hudscale,768*convarValues.vrmod_hudscale,10,convarValues.vrmod_hudcurve,mtx)
-	hudMesh = hudMeshes[meshName]
+	local hudMesh = CurvedPlane(1366*convarValues.vrmod_hudscale,768*convarValues.vrmod_hudscale,10,convarValues.vrmod_hudcurve,mtx)
 
 	local blacklist = {}
 	for k,v in ipairs( string.Explode(",",convarValues.vrmod_hudblacklist) ) do
 		blacklist[v] = #v > 0 and true or blacklist[v]
 	end
 
-	if table.Count(blacklist) > 0 then
+	if not table.IsEmpty(blacklist) then
 		hook.Add("HUDShouldDraw","vrmod_hud",function(name)
 			if blacklist[name] then
 				return false
@@ -77,7 +77,9 @@ local function AddHUD()
 		render.PushRenderTarget(rt)
 		render.OverrideAlphaWriteEnable(true,true)
 		render.Clear(0,0,0,convarValues.vrmod_hudtestalpha,true,true)
-		render.RenderHUD(0,0,1366,768)
+		-- Used to be 1366x768, which is almost always smaller than the desktop
+		-- resolution and causes hud fonts to regenerate, so we'd rather not
+		render.RenderHUD(0,0,ScrW(),ScrH())
 		render.OverrideAlphaWriteEnable(false)
 		render.PopRenderTarget()
 		mtx:Identity()
@@ -106,7 +108,7 @@ vrmod.AddCallbackedConvar("vrmod_huddistance", nil, "60", nil, nil, nil, nil, to
 vrmod.AddCallbackedConvar("vrmod_hudtestalpha", nil, "0", nil, nil, nil, nil, tonumber)
 
 hook.Add("VRMod_Menu","vrmod_hud",function(frame)
-	frame.SettingsForm:CheckBox("Enable HUD", "vrmod_hud")
+	frame.SettingsForm:CheckBox("#vrmod.settings.hud", "vrmod_hud")
 end)
 
 hook.Add("VRMod_Start","hud",function(ply)
@@ -119,8 +121,3 @@ hook.Add("VRMod_Exit","hud",function(ply)
 	RemoveHUD()
 end)
 --]]
-
-
-
-
-

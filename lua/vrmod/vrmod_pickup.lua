@@ -79,6 +79,7 @@ end
 
 if CLIENT then
 	-- TODO: Determine the velocity serverside
+	-- Edit: This mostly just gets used for dropping items so might not be necessary
 	function vrmod.Pickup( bLeftHand, bDrop )
 		net.Start("vrmod_pickup")
 			net.WriteBool(bLeftHand)
@@ -247,15 +248,14 @@ if CLIENT then
 		end
 	end)
 
-	-- TODO: Halos are broken in VR even with the current fix
-	--[[local hovered = {}
+	local hovered = {}
 	function g_VR.DrawPickupHalos()
 		local pl = LocalPlayer()
 
-		// Update hovered props once per frame
+		-- Update hovered props once per frame
 		if vrmod.InEye(true) then
 			for i = 1,2 do
-				if !vrmod.IsHandEmpty(pl,i == 1) then
+				if not vrmod.IsHandEmpty(pl,i == 1) then
 					if hovered[i] then hovered[i] = nil end
 					continue
 				end
@@ -280,18 +280,18 @@ if CLIENT then
 					})
 					if tr.Hit then continue end
 
-					if i == 1 or hovered[1] != t.ent && !t.ent.VRPickupRenderOverride then
+					if i == 1 or hovered[1] ~= t.ent && not t.ent.VRPickupRenderOverride then
 						found = true
 						hovered[i] = t.ent
 					end
 					break
 				end
 
-				if !found && hovered[i] then hovered[i] = nil end
+				if not found && hovered[i] then hovered[i] = nil end
 			end
 		end
 
-		if !table.IsEmpty(hovered) then
+		if not table.IsEmpty(hovered) then
 			local clr = pl:GetWeaponColor()
 			clr = Color(clr[1]*255,clr[2]*255,clr[3]*255)
 
@@ -310,7 +310,7 @@ if CLIENT then
 		if pl == LocalPlayer() then
 			hook.Remove("PreDrawHalos","VRMod_PickupHalos")
 		end
-	end)]]
+	end)
 
 elseif SERVER then
 
@@ -514,8 +514,13 @@ elseif SERVER then
 			ply.lastVRPickup = engine.TickCount()
 		end
 
-		local steamid = ply:SteamID()
-		local pickupPoint,handAng = vrmod.GetPalm(ply,bLeftHand)
+		local handPos,handAng
+		if bLeftHand then
+			handPos,handAng = vrmod.GetLeftHandPose(ply)
+		else
+			handPos,handAng = vrmod.GetRightHandPose(ply)
+		end
+		local pickupPoint = vrmod.GetPalm(ply,bLeftHand,handPos,handAng)
 
 		local grabbed
 		local lpos,lang
