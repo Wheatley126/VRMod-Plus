@@ -35,15 +35,13 @@ Some of the names and functions might change before release so be prepared if yo
 
 * ### QoL
     * Removed the voice permissions prompt upon starting VR. You will still be prompted when activating voice from the chat menu.
+    * Added support for translations in the built-in menus.
 
 
 ## To Do:
 
 * ### Pickups
-    * Fix Halos.
-    * Add indicator that objects can be picked up.
     * Add hold finger poses.
-    * Use serverside copy of hand pose to reduce networking.
     * Drop object if it's been too far from the hand for too long.
 
 * ### Mod Support
