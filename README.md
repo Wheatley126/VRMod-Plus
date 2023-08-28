@@ -30,7 +30,7 @@ Some of the names and functions might change before release so be prepared if yo
 
 * ### Mod Support
     * Weapons can specify a "Draw Mode" that functions regardless of the "Use Worldmodels" setting. Options are Viewmodel, Worldmodel, and Custom.
-    * Weapons can be set to use the left hand and the controls will adjust to match.
+    * Weapons can set which hand they use and the controls will adjust to match.
     * The model (+skin and bodygroups) for the floating hands can be chosen with the hook "VRMod_GetHandsModel".
     * Models can be added to the hands menu with vrmod.AddHandsOption().
     * Menus can specify a custom render function that gets called in place of the default.
