@@ -89,15 +89,12 @@ local function OpenMenu()
 	end
 	
 	if not error or error == "Already running" then
-		--hook.Call("VRMod_Menu",nil,frame)
+		--hook.Run("VRMod_Menu",frame)
 		local hooks = hook.GetTable().VRMod_Menu
-		local names = {}
-		for k,v in pairs(hooks) do
-			names[#names+1] = k
-		end
-		table.sort(names)
-		for k,v in ipairs(names) do
-			hooks[v](frame)
+		if hooks then
+			for k,func in SortedPairs(hooks) do
+				func(frame)
+			end
 		end
 	end
 	

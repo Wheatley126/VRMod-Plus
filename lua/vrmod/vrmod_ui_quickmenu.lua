@@ -3,7 +3,7 @@ if SERVER then return end
 local open = false
 
 function g_VR.MenuOpen()
-	if hook.Call("VRMod_OpenQuickMenu") == false then return end
+	if hook.Run("VRMod_OpenQuickMenu") == false then return end
 
 	if open then return end
 	open = true
@@ -74,8 +74,8 @@ function g_VR.MenuOpen()
 			local x, y = t.slot, t.actualSlotPos
 			draw.RoundedBox(8, x*(buttonWidth+gap), 230+y*(buttonHeight+gap), buttonWidth, buttonHeight, Color(0, 0, 0, hoveredItem == i and 200 or 128))
 			local explosion = string.Explode(" ", g_VR.menuItems[t.index].name, false)
-			for j = 1,#explosion do
-				draw.SimpleText( explosion[j], "HudSelectionText", buttonWidth/2 + x*(buttonWidth+gap), 230+buttonHeight/2+y*(buttonHeight+gap) - (#explosion*6 - 6 - (j-1)*12), Color( 255, 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+			for j,str in ipairs(explosion) do
+				draw.SimpleText(str, "HudSelectionText", buttonWidth/2 + x*(buttonWidth+gap), 230+buttonHeight/2+y*(buttonHeight+gap) - (#explosion*6 - 6 - (j-1)*12), Color( 255, 255, 255, 255 ), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 			end
 		end
 	end

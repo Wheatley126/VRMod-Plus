@@ -473,13 +473,14 @@ if CLIENT then
 			end
 		end)
 	end)
-	
+
+	-- TODO: Determine this clientside with Player:InVehicle()
 	net.Receive("vrutil_net_entervehicle",function(len)
-		hook.Call("VRMod_EnterVehicle", nil)
+		hook.Run("VRMod_EnterVehicle")
 	end)
 	
 	net.Receive("vrutil_net_exitvehicle",function(len)
-		hook.Call("VRMod_ExitVehicle", nil)
+		hook.Run("VRMod_ExitVehicle")
 	end)
 
 elseif SERVER then

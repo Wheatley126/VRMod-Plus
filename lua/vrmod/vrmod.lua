@@ -184,7 +184,7 @@ if CLIENT then
 		for k,v in pairs(vrmod.GetConvars()) do
 			pcall(function() v:Revert() end)
 		end
-		hook.Call("VRMod_Reset")
+		hook.Run("VRMod_Reset")
 	end )
 	
 	concommand.Add( "vrmod_info", function( ply, cmd, args )
@@ -468,12 +468,12 @@ if CLIENT then
 				end
 			end
 			g_VR.sixPoints = (g_VR.tracking.pose_waist and g_VR.tracking.pose_leftfoot and g_VR.tracking.pose_rightfoot) ~= nil
-			hook.Call("VRMod_Tracking")
+			hook.Run("VRMod_Tracking")
 			
 			--handle input
 			g_VR.input, g_VR.changedInputs = VRMOD_GetActions()
 			for k,v in pairs(g_VR.changedInputs) do
-				hook.Call("VRMod_Input",nil,k,v)
+				hook.Run("VRMod_Input",k,v)
 			end
 			
 			--

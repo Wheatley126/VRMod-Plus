@@ -47,7 +47,6 @@ Some of the names and functions might change before release so be prepared if yo
 * ### Mod Support
     * Overhaul input hook.
     * Add more PrePickup and PostPickup hooks (and possibly PostDrop).
-    * Replace various instances of hook.Call with hook.Run.
 
 * ### Other
     * Make hand-agnostic control scheme.
