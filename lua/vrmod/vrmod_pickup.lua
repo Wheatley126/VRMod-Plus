@@ -382,6 +382,8 @@ elseif SERVER then
 		for i,t in ipairs(vrmod.pickupList) do
 			if t.steamid ~= steamid or t.left ~= bLeftHand then continue end
 
+			-- In the future we could add a PreDrop hook here, but it probably won't be needed
+
 			if IsValid(t.phys) then
 				t.ent:SetCollisionGroup(t.collisionGroup)
 

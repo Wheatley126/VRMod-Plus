@@ -471,10 +471,7 @@ if CLIENT then
 			hook.Run("VRMod_Tracking")
 			
 			--handle input
-			g_VR.input, g_VR.changedInputs = VRMOD_GetActions()
-			for k,v in pairs(g_VR.changedInputs) do
-				hook.Run("VRMod_Input",k,v)
-			end
+			g_VR.ProcessInput()
 			
 			--
 			if not system.HasFocus() or #g_VR.errorText ~= 0 then

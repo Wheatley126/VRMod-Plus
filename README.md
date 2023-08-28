@@ -38,14 +38,11 @@ Some of the names and functions might change before release so be prepared if yo
     * Removed the voice permissions prompt upon starting VR. You will still be prompted when activating voice from the chat menu.
 
 
-## To Do:
+## To Do Before Workshop Release:
 
 * ### Pickups
-    * Add hold finger poses.
+    * Add hold finger poses. (Might remove this one)
     * Drop object if it's been too far from the hand for too long.
-
-* ### Mod Support
-    * Overhaul input hook.
 
 * ### Other
     * Make hand-agnostic control scheme.
