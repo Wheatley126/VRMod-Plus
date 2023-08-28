@@ -41,7 +41,13 @@ function g_VR.MenuOpen()
 	local renderCount = 0
 	
 	local tmp = Angle(0,g_VR.tracking.hmd.ang.yaw-90,60) --Forward() = right, Right() = back, Up() = up (relative to panel, panel forward is looking at top of panel from middle of panel, up is normal)
-	local pos, ang = WorldToLocal( g_VR.tracking.pose_righthand.pos + g_VR.tracking.pose_righthand.ang:Forward()*9 + tmp:Right()*-7.68 + tmp:Forward()*-6.45, tmp, g_VR.origin, g_VR.originAngle)
+	local pos,ang
+	if vrmod.GetVRWeaponHand() == VR_HAND_LEFT then
+		pos,ang = g_VR.tracking.pose_lefthand.pos,g_VR.tracking.pose_lefthand.ang
+	else
+		pos,ang = g_VR.tracking.pose_righthand.pos,g_VR.tracking.pose_righthand.ang
+	end
+	pos, ang = WorldToLocal( pos + ang:Forward()*9 + tmp:Right()*-7.68 + tmp:Forward()*-6.45, tmp, g_VR.origin, g_VR.originAngle)
 	
 	local function RenderMenu()
 		local hoveredItem = -1

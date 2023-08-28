@@ -45,5 +45,7 @@ Some of the names and functions might change before release so be prepared if yo
     * Drop object if it's been too far from the hand for too long.
 
 * ### Other
-    * Make hand-agnostic control scheme.
     * Improve vehicle support.
+    * Improve teleport logic.
+    * Remake quick menu.
+    * Set finger poses for static weapons.

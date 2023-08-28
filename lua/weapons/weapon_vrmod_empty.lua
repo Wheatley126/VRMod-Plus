@@ -14,7 +14,7 @@ SWEP.Primary.DefaultClip = -1
 
 SWEP.Secondary = SWEP.Primary
 
-SWEP.VRInfo = { inHands = VR_HAND_NONE }
+SWEP.VRInfo = { mainHand = VR_HAND_NONE, inHands = VR_HAND_NONE }
 
 function SWEP:Initialize()
 	self:SetHoldType( "normal" )

@@ -575,6 +575,22 @@ if CLIENT then
 		return convars.vrmod_useworldmodels:GetBool() && VR_WEPDRAWMODE_WORLDMODEL or VR_WEPDRAWMODE_VIEWMODEL
 	end
 
+	function vrmod.GetPreferredHand()
+		return convars.vrmod_lefthand:GetBool() && VR_HAND_LEFT or VR_HAND_RIGHT
+	end
+
+	function vrmod.GetVRWeaponHand()
+		local wep = LocalPlayer():GetActiveWeapon()
+		if not wep:IsValid() then
+			return vrmod.GetPreferredHand()
+		end
+
+		local hand = wep:GetVRMainHand()
+		if hand == VR_HAND_NONE then return vrmod.GetPreferredHand() end
+
+		return hand
+	end
+
 elseif SERVER then
 
 	function vrmod.NetReceiveLimited(msgName, maxCountPerSec, maxLen, callback)
@@ -722,17 +738,30 @@ end
 
 local WEAPON = FindMetaTable("Weapon")
 
--- Set which hand the weapon is in
+-- Set which hands the weapon is occupying
 -- Note that this doesn't network automatically
 function WEAPON:SetVRHands(hands)
 	if not self.VRInfo then self.VRInfo = {} end
 	self.VRInfo.inHands = hands
 end
 
--- Returns which hand the weapon is in
+-- Returns which hand the weapon is occupying
 -- Defaults to the right hand
 function WEAPON:GetVRHands()
 	return self.VRInfo && self.VRInfo.inHands or VR_HAND_RIGHT
+end
+
+-- Set which hands the weapon is occupying
+-- This doesn't network automatically either
+function WEAPON:SetVRMainHand(hand)
+	if not self.VRInfo then self.VRInfo = {} end
+	self.VRInfo.mainHand = hand
+end
+
+-- Returns which hand is this weapon's "main" hand
+-- Defaults to the right hand
+function WEAPON:GetVRMainHand()
+	return self.VRInfo && self.VRInfo.mainHand or VR_HAND_RIGHT
 end
 
 

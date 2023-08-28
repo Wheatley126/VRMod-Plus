@@ -14,12 +14,26 @@ local defaults = {
 	boolean_primaryfire = function(pressed)
 		if not g_VR.menuFocus then
 			LocalPlayer():ConCommand(pressed and "+attack" or "-attack")
+		else
+			-- UI Input
+			if pressed then
+				gui.InternalMousePressed(MOUSE_LEFT)
+			else
+				gui.InternalMouseReleased(MOUSE_LEFT)
+			end
 		end
 	end,
 
 	boolean_secondaryfire = function(pressed)
 		if not g_VR.menuFocus then
 			LocalPlayer():ConCommand(pressed and "+attack2" or "-attack2")
+		else
+			-- UI Input
+			if pressed then
+				gui.InternalMousePressed(MOUSE_RIGHT)
+			else
+				gui.InternalMouseReleased(MOUSE_RIGHT)
+			end
 		end
 	end,
 
@@ -104,10 +118,31 @@ local function RunCustomActions(action, pressed)
 			end
 		end
 	end
-end)
+end
+
+local function SwapInputs(a,b)
+	local t = g_VR.input[a]
+	g_VR.input[a] = g_VR.input[b]
+	g_VR.input[b] = t
+
+	t = g_VR.changedInputs[a]
+	g_VR.changedInputs[a] = g_VR.changedInputs[b]
+	g_VR.changedInputs[b] = t
+end
 
 function g_VR.ProcessInput()
 	g_VR.input, g_VR.changedInputs = VRMOD_GetActions()
+
+	-- Rebind some keys (in the future we'll change them in the action manifest)
+	SwapInputs("boolean_reload","boolean_secondaryfire")
+	SwapInputs("boolean_reload","boolean_chat")
+	SwapInputs("boolean_spawnmenu","boolean_reload")
+
+	if vrmod.GetVRWeaponHand() == VR_HAND_LEFT then
+		-- Swap certain buttons when in the left hand
+		SwapInputs("boolean_primaryfire","boolean_secondaryfire")
+		SwapInputs("boolean_reload","boolean_spawnmenu")
+	end
 
 	for action,pressed in pairs(g_VR.changedInputs) do
 		if hook.Run("VRMod_AllowDefaultAction", action) ~= false then
@@ -115,6 +150,6 @@ function g_VR.ProcessInput()
 			RunCustomActions(action,pressed)
 		end
 
-		hook.Run("VRMod_Input",k,v)
+		hook.Run("VRMod_Input",action,pressed)
 	end
 end

@@ -27,7 +27,7 @@ hook.Add("VRMod_Input","teleport",function( action, pressed )
 				render.SuppressEngineLighting(false)
 			end
 			hook.Add("VRMod_PreRender","teleport",function()
-				local controllerPos, controllerDir = g_VR.tracking.pose_lefthand.pos, g_VR.tracking.pose_lefthand.ang:Forward()
+				local controllerPos, controllerDir = g_VR.tracking.pose_righthand.pos, g_VR.tracking.pose_righthand.ang:Forward()
 				prevPos = controllerPos
 				local hit = false
 				for i=2,17 do

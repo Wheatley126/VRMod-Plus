@@ -45,6 +45,7 @@ if CLIENT then
 			vrmod.UpdateViewmodelInfo(wep,true)
 		end
 	end)
+	vrmod.AddCallbackedConvar("vrmod_lefthand", nil, "0")
 	vrmod.AddCallbackedConvar("vrmod_desktopview", nil, "3")
 	vrmod.AddCallbackedConvar("vrmod_useworldmodels", nil, "0")
 	vrmod.AddCallbackedConvar("vrmod_laserpointer", nil, "0")
@@ -85,6 +86,7 @@ if CLIENT then
 	
 	hook.Add("VRMod_Menu","vrmod_options",function(frame)
 		local form = frame.SettingsForm
+		form:CheckBox("#vrmod.settings.lefthand", "vrmod_lefthand")
 		form:CheckBox("#vrmod.settings.floatinghands", "vrmod_floatinghands")
 		form:CheckBox("#vrmod.settings.useworldmodels", "vrmod_useworldmodels")
 		form:CheckBox("#vrmod.settings.laserpointer", "vrmod_laserpointer")

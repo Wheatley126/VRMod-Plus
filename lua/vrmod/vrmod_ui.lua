@@ -76,6 +76,14 @@ if CLIENT then
 		local menuFocusDist = 99999
 		local menuFocusPanel = nil
 		local menuFocusCursorWorldPos = nil
+
+		-- Used for cursor and input
+		local handPos,handAng
+		if vrmod.GetVRWeaponHand() == VR_HAND_LEFT then
+			handPos,handAng = g_VR.tracking.pose_lefthand.pos,g_VR.tracking.pose_lefthand.ang
+		else
+			handPos,handAng = g_VR.tracking.pose_righthand.pos,g_VR.tracking.pose_righthand.ang
+		end
 		
 		local tms = render.GetToneMappingScaleLinear()
 		render.SetToneMappingScaleLinear(Vector(1,1,1)*(g_VR.view.dopostprocess && 0.75 or 1))
@@ -116,8 +124,8 @@ if CLIENT then
 			if v.cursorEnabled then
 				local cursorX, cursorY = -1,-1
 				local cursorWorldPos = Vector()
-				local start = g_VR.tracking.pose_righthand.pos
-				local dir = g_VR.tracking.pose_righthand.ang:Forward()
+				local start = handPos
+				local dir = handAng:Forward()
 				local dist
 				local normal = ang:Up()
 				local A = normal:Dot(dir)
@@ -157,8 +165,11 @@ if CLIENT then
 		end
 
 		if g_VR.menuFocus then
+			local col = LocalPlayer():GetWeaponColor()*255
+			col = Color(col[1],col[2],col[3])
+
 			render.SetColorMaterialIgnoreZ()
-			render.DrawBeam(g_VR.tracking.pose_righthand.pos, menuFocusCursorWorldPos, 0.1, 0, 1, Color(0,0,255))
+			render.DrawBeam(handPos, menuFocusCursorWorldPos, 0.1, 0, 1, col)
 			input.SetCursorPos(g_VR.menuCursorX,g_VR.menuCursorY)
 		end
 	end
@@ -221,15 +232,4 @@ if CLIENT then
 			gui.EnableScreenClicker(false)
 		end
 	end
-	
-	hook.Add("VRMod_Input","ui",function(action, pressed)
-		if g_VR.menuFocus and action == "boolean_primaryfire" then
-			if pressed then
-				gui.InternalMousePressed(MOUSE_LEFT)
-			else
-				gui.InternalMouseReleased(MOUSE_LEFT)
-			end
-		end
-	end)
-
 end
