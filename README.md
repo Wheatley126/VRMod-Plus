@@ -25,6 +25,7 @@ Some of the names and functions might change before release so be prepared if yo
     * Panels now render once per frame rather than 0.1 seconds after clicking them.
     * Menus are drawn using the same material, rather than a separate one for each.
     * Fixed clipping and translucency issues when rendering panels.
+    * Added support for translations in the built-in menus.
 
 * ### Mod Support
     * Weapons can specify a "Draw Mode" that functions regardless of the "Use Worldmodels" setting. Options are Viewmodel, Worldmodel, and Custom.
@@ -35,7 +36,6 @@ Some of the names and functions might change before release so be prepared if yo
 
 * ### QoL
     * Removed the voice permissions prompt upon starting VR. You will still be prompted when activating voice from the chat menu.
-    * Added support for translations in the built-in menus.
 
 
 ## To Do:
