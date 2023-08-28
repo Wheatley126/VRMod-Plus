@@ -424,6 +424,8 @@ elseif SERVER then
 		if not phys:IsValid() then return end
 		local steamid = pl:SteamID()
 
+		hook.Run("VRMod_PrePickup",ent,ply)
+
 		if table.IsEmpty(vrmod.pickupList) then
 			CreatePhysHook()
 		end
@@ -502,6 +504,8 @@ elseif SERVER then
 			net.WriteAngle(localAng)
 			net.WriteFloat(ent:GetCreationTime())
 		net.Broadcast()
+
+		hook.Run("VRMod_PostPickup",ent,ply)
 	end
 	
 	function vrmod.AttemptPickup(ply, bLeftHand)
@@ -542,8 +546,6 @@ elseif SERVER then
 		if grabbed then
 			vrmod.DoPickup(ply,grabbed,bLeftHand,lpos,lang)
 		end
-
-		hook.Run("VRMod_PostPickup",grabbed)
 	end
 	
 	vrmod.NetReceiveLimited("vrmod_pickup",10,400,function(len, ply)

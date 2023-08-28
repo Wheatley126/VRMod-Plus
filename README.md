@@ -46,9 +46,7 @@ Some of the names and functions might change before release so be prepared if yo
 
 * ### Mod Support
     * Overhaul input hook.
-    * Add more PrePickup and PostPickup hooks (and possibly PostDrop).
 
 * ### Other
     * Make hand-agnostic control scheme.
-    * Update hands model after respawn.
     * Improve vehicle support.
