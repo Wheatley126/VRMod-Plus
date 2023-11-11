@@ -144,7 +144,14 @@ function g_VR.ProcessInput()
 		SwapInputs("boolean_reload","boolean_spawnmenu")
 	end
 
+	local wep = LocalPlayer():GetActiveWeapon()
+	local wepInput = wep:IsValid() && wep.HandleVRInput ~= nil
 	for action,pressed in pairs(g_VR.changedInputs) do
+		-- Weapons take priority
+		if wepInput then
+			if wep:HandleVRInput(action,pressed) then continue end
+		end
+
 		if hook.Run("VRMod_AllowDefaultAction", action) ~= false then
 			if defaults[action] then defaults[action](pressed) end
 			RunCustomActions(action,pressed)

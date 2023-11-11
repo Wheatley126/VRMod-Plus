@@ -503,6 +503,11 @@ if CLIENT then
 	end
 	
 	function vrmod.AddInGameMenuItem(name, slot, slotpos, func)
+		-- Convert phrases manually so we can layout properly
+		if name[1] == "#" then
+			name = language.GetPhrase(name)
+		end
+
 		local tbl = { name = name, slot = slot, slotPos = slotpos, func = func }
 
 		for i,t in ipairs(g_VR.menuItems) do
@@ -705,7 +710,7 @@ end
 -- SHARED Stuff under here
 
 function vrmod.IsHandEmpty(pl,bLeft)
-	if !vrmod.IsPlayerInVR(pl) then return false end
+	if not vrmod.IsPlayerInVR(pl) then return false end
 
 	local wep = pl:GetActiveWeapon()
 	local handFlag = bLeft && VR_HAND_LEFT or VR_HAND_RIGHT
@@ -717,6 +722,17 @@ function vrmod.IsHandEmpty(pl,bLeft)
 		return g_VR[pl:SteamID()].heldItems[bLeft && 1 or 2] == nil
 	else
 		return g_VR[bLeft && "heldEntityLeft" or "heldEntityRight"] == nil
+	end
+end
+
+function vrmod.GetHeldItem(pl,bLeft)
+	if not vrmod.IsPlayerInVR(pl) then return end
+
+	if SERVER then
+		return g_VR[pl:SteamID()].heldItems[bLeft && 1 or 2]
+	else
+		if pl ~= LocalPlayer() then return end
+		return g_VR[bLeft && "heldEntityLeft" or "heldEntityRight"]
 	end
 end
 
@@ -751,7 +767,7 @@ function WEAPON:GetVRHands()
 	return self.VRInfo && self.VRInfo.inHands or VR_HAND_RIGHT
 end
 
--- Set which hands the weapon is occupying
+-- Sets the weapon's "main" hand
 -- This doesn't network automatically either
 function WEAPON:SetVRMainHand(hand)
 	if not self.VRInfo then self.VRInfo = {} end

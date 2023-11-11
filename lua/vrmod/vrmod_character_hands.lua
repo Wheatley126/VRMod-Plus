@@ -4,7 +4,7 @@ local convars = vrmod.GetConvars()
 
 local dontUpdate = false
 local function RefreshModel()
-	if !dontUpdate then g_VR.UpdateHandsModel() end
+	if not dontUpdate then g_VR.UpdateHandsModel() end
 end
 
 vrmod.AddCallbackedConvar("vrmod_floatinghands_mdl",nil,"Citizen Hands",nil,nil,nil,nil,nil,RefreshModel)
@@ -65,7 +65,7 @@ function vrmod.ShouldDrawHands()
 end
 
 local function ResetBodygroups(testent)
-	if !testent:IsValid() then return end
+	if not testent:IsValid() then return end
 	testent:SetNoDraw(true)
 
 	local str = ""
@@ -268,11 +268,11 @@ end
 
 function g_VR.UpdateHandsModel(noChange)
 	local hands = vrmod.GetHands()
-	if !noChange && !hands:IsValid() then return end
+	if not noChange && not hands:IsValid() then return end
 
 	local mdl,skn,bg = hook.Run("VRMod_GetHandsModel")
 
-	if !mdl && !skn && !bg then
+	if not mdl && not skn && not bg then
 		local name = string.Trim(convars.vrmod_floatinghands_mdl:GetString())
 		if g_VR.handsModels[name] then
 			mdl = g_VR.handsModels[name]
@@ -287,34 +287,34 @@ function g_VR.UpdateHandsModel(noChange)
 		end
 	end
 
-	if !mdl then mdl = "models/vrmod/hands/vr_hands.mdl" end
+	if not mdl then mdl = "models/vrmod/hands/vr_hands.mdl" end
 	if noChange then return mdl end
 
-	if hands:GetModel() != mdl then
+	if hands:GetModel() ~= mdl then
 		hands:ChangeModel(mdl)
 	end
 
-	if !skn or skn < 0 or skn > hands:SkinCount()-1 then
+	if not skn or skn < 0 or skn > hands:SkinCount()-1 then
 		skn = 0
 	else
 		skn = math.floor(skn)
 	end
 
-	if !bg then bg = {} end
+	if not bg then bg = {} end
 
-	if hands:GetSkin() != skn then
+	if hands:GetSkin() ~= skn then
 		hands:SetSkin(skn)
 	end
 
 	for group = 0,hands:GetNumBodyGroups()-1 do
 		local val = bg[group]
-		if !val or val < 0 or val > hands:GetBodygroupCount(group) then
+		if not val or val < 0 or val > hands:GetBodygroupCount(group) then
 			val = 0
 		else
 			val = math.floor(val)
 		end
 
-		if hands:GetBodygroup(group) != val then
+		if hands:GetBodygroup(group) ~= val then
 			hands:SetBodygroup(group,val)
 		end
 	end

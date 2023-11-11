@@ -65,17 +65,22 @@ local function ResetViewmodelInfo()
 end
 
 function vrmod.UpdateViewmodelInfo(wep,force)
-	if !IsValid(wep) then
+	if not IsValid(wep) then
 		ResetViewmodelInfo()
 		g_VR.lastUpdatedWeapon = ""
 		return
 	end
 
 	local class = wep:GetClass()
-	if class == g_VR.lastUpdatedWeapon && !force then return end
+	if class == g_VR.lastUpdatedWeapon && not force then return end
 
-	local vm = wep:GetWeaponViewModel()
-	if vm == "" or vm == "models/weapons/c_arms.mdl" then
+	local drawWorld = vrmod.GetWeaponDrawMode(wep) ~= VR_WEPDRAWMODE_VIEWMODEL
+	g_VR.viewModel = not drawWorld && LocalPlayer():GetViewModel() or wep
+
+	local vmi = g_VR.viewModelInfo[class] or {}
+	local model = vmi.modelOverride or g_VR.viewModel:GetModel()
+
+	if model == "" or model == "models/weapons/c_arms.mdl" then
 		ResetViewmodelInfo()
 		g_VR.lastUpdatedWeapon = class
 		return
@@ -95,24 +100,18 @@ function vrmod.UpdateViewmodelInfo(wep,force)
 	end]]
 	
 	-------------------------
-	local drawWorld = vrmod.GetWeaponDrawMode(wep) ~= VR_WEPDRAWMODE_VIEWMODEL
-	g_VR.viewModel = !drawWorld && LocalPlayer():GetViewModel() or wep
-
 	if wep.ViewModelFOV then
-		if !g_VR.swepOriginalFovs[class] then
+		if not g_VR.swepOriginalFovs[class] then
 			g_VR.swepOriginalFovs[class] = wep.ViewModelFOV
 		end
 		wep.ViewModelFOV = GetConVar("fov_desired"):GetFloat()
 	end
 
-	local vmi = g_VR.viewModelInfo[class] or {}
-	local model = vmi.modelOverride or g_VR.viewModel:GetModel()
-
 	--create offsets if they don't exist
 	if vmi.offsetPos == nil or vmi.offsetAng == nil then
 		vmi.offsetPos, vmi.offsetAng = Vector(), Angle()
 
-		local cm = ClientsideModel(vm)
+		local cm = ClientsideModel(wep:GetWeaponViewModel())
 		if IsValid(cm) then
 			cm:SetNoDraw(true)
 			cm:SetupBones()
@@ -134,7 +133,7 @@ function vrmod.UpdateViewmodelInfo(wep,force)
 	--create finger poses
 	vmi.closedHandAngles = vrmod.GetRightHandFingerAnglesFromModel( model )
 
-	-- TODO: ArcVR weapons set this manually, but only on deploy so we want to avoid breaking it
+	-- ArcVR weapons set this manually, but only on deploy so we want to avoid breaking it
 	vrmod.SetRightHandClosedFingerAngles( vmi.closedHandAngles )
 	vrmod.SetRightHandOpenFingerAngles( vmi.closedHandAngles )
 

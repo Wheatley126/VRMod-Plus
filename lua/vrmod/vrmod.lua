@@ -492,7 +492,7 @@ if CLIENT then
 			--update viewmodel position
 			local wep = pl:GetActiveWeapon()
 
-			local drawWorld = vrmod.GetWeaponDrawMode(wep) != VR_WEPDRAWMODE_VIEWMODEL
+			local drawWorld = vrmod.GetWeaponDrawMode(wep) ~= VR_WEPDRAWMODE_VIEWMODEL
 			if drawWorld ~= prevWepDrawWorld then
 				vrmod.UpdateViewmodelInfo(wep,true)
 				prevWepDrawWorld = drawWorld
@@ -507,10 +507,6 @@ if CLIENT then
 				local pos, ang = LocalToWorld(g_VR.currentvmi.offsetPos,g_VR.currentvmi.offsetAng,g_VR.tracking.pose_righthand.pos,g_VR.tracking.pose_righthand.ang)
 				g_VR.viewModelPos = pos
 				g_VR.viewModelAng = ang
-
-				-- TODO: Add an offset in worldmodel mode to fix muzzle effects
-				if drawWorld then
-				end
 			end
 
 			if IsValid(g_VR.viewModel) then
@@ -528,17 +524,7 @@ if CLIENT then
 						end
 					end
 				end
-
-				local muzzle = g_VR.viewModel:GetAttachment(1)
-				if !muzzle then
-					local pos,ang = vrmod.GetRightHandPose()
-					muzzle = {
-						Pos = pos,
-						Ang = ang
-					}
-				end
-
-				g_VR.viewModelMuzzle = muzzle
+				-- Muzzle updates were moved to the draw function
 			end
 			
 			--set view according to viewentity
@@ -621,7 +607,7 @@ if CLIENT then
 		local blockViewModelDraw = true
 		local function DrawWeapon()
 			local wep = LocalPlayer():GetActiveWeapon()
-			if !IsValid(wep) then return end
+			if not IsValid(wep) then return end
 
 			local drawmode = vrmod.GetWeaponDrawMode(wep)
 
@@ -638,27 +624,67 @@ if CLIENT then
 				end
 			end
 			blockViewModelDraw = true
+
+			-- Update muzzle position
+			if IsValid(g_VR.viewModel) then
+				--g_VR.viewModel:SetupBones()
+
+				local muzzle = g_VR.viewModel:GetAttachment(1)
+				if not muzzle then
+					local pos,ang = vrmod.GetRightHandPose()
+					muzzle = {
+						Pos = pos,
+						Ang = ang
+					}
+				end
+
+				g_VR.viewModelMuzzle = muzzle
+			end
+
+			-- Offset so muzzle effects are in the right place
+			if drawmode ~= VR_WEPDRAWMODE_VIEWMODEL && g_VR.viewModelMuzzle then
+				local vm = LocalPlayer():GetViewModel()
+
+				if vm:IsValid() then
+					local muzzle = vm:GetAttachment(1)
+
+					if muzzle then
+						local offpos,offang = WorldToLocal(vm:GetPos(),vm:GetAngles(),muzzle.Pos,muzzle.Ang)
+						g_VR.viewModelPos,g_VR.viewModelAng = LocalToWorld(offpos,offang,g_VR.viewModelMuzzle.Pos,g_VR.viewModelMuzzle.Ang)
+					end
+				end
+			end
 		end
 
+		local lasermat = Material("cable/redlaser")
 		g_VR.allowPlayerDraw = false
 		hook.Add("PostDrawTranslucentRenderables","vrutil_hook_drawplayerandviewmodel",function( bDrawingDepth, bDrawingSkybox )
 			local pl = LocalPlayer()
-			if bDrawingSkybox or !pl:Alive() or !vrmod.InEye() then return end
+			if bDrawingSkybox or not pl:Alive() or not vrmod.InEye() then return end
 
 			--draw playermodel
 			g_VR.allowPlayerDraw = true
 			cam.Start3D() cam.End3D() --this invalidates ShouldDrawLocalPlayer cache
-			local tmp = render.GetBlend()
+			local r,g,b = render.GetColorModulation()
+			local a = render.GetBlend()
+			render.SetColorModulation(1,1,1)
 			render.SetBlend(1) --without this the despawning bullet casing effect gets applied to the player???
 
 			pl:DrawModel()
 			--draw viewmodel
-			local oldOver = pl.RenderOverride // Fix worldmodel not drawing with floating hands
+			local oldOver = pl.RenderOverride -- Fix worldmodel not drawing with floating hands
 			pl.RenderOverride = function() end
 			DrawWeapon()
 			pl.RenderOverride = oldOver
 
-			render.SetBlend(tmp)
+			-- Draw Laser
+			if g_VR.viewModelMuzzle && not g_VR.menuFocus && convars.vrmod_laserpointer:GetBool() then
+				render.SetMaterial(lasermat)
+				render.DrawBeam(g_VR.viewModelMuzzle.Pos, g_VR.viewModelMuzzle.Pos + g_VR.viewModelMuzzle.Ang:Forward()*10000, 1, 0, 1)
+			end
+
+			render.SetColorModulation(r,g,b)
+			render.SetBlend(a)
 			cam.Start3D() cam.End3D()
 			g_VR.allowPlayerDraw = false
 
@@ -677,18 +703,7 @@ if CLIENT then
 
 		hook.Add("ShouldDrawLocalPlayer","vrutil_hook_shoulddrawlocalplayer",function(ply)
 			return g_VR.allowPlayerDraw
-		end)
-		
-		-- add laser pointer
-		local mat = Material("cable/redlaser")
-		hook.Add("PostDrawTranslucentRenderables","vr_laserpointer",function( bDrawingDepth, bDrawingSkybox )
-			if bDrawingSkybox then return end
-			if g_VR.viewModelMuzzle && !g_VR.menuFocus && convars.vrmod_laserpointer:GetBool() then
-				render.SetMaterial(mat)
-				render.DrawBeam(g_VR.viewModelMuzzle.Pos, g_VR.viewModelMuzzle.Pos + g_VR.viewModelMuzzle.Ang:Forward()*10000, 1, 0, 1, Color(255,255,255))
-			end
-		end)
-		
+		end)		
 	end
 	
 	function VRUtilClientExit()

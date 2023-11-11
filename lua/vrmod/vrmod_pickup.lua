@@ -197,6 +197,8 @@ if CLIENT then
 			ent.RenderOverride = HeldRender
 			ent.CalcAbsolutePosition = HeldCalcPos
 
+			info.ent = ent
+
 			if pl == LocalPlayer() then
 				g_VR[info.left && "heldEntityLeft" or "heldEntityRight"] = ent
 			end
@@ -385,7 +387,9 @@ elseif SERVER then
 			-- In the future we could add a PreDrop hook here, but it probably won't be needed
 
 			if IsValid(t.phys) then
-				t.ent:SetCollisionGroup(t.collisionGroup)
+				if IsValid(t.ent) then
+					t.ent:SetCollisionGroup(t.collisionGroup)
+				end
 
 				if handPos then
 					local wPos, wAng = LocalToWorld(t.localPos, t.localAng, handPos, handAng)

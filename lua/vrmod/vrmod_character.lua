@@ -68,15 +68,30 @@ if CLIENT then
 			local parentpos, parentang = parentmat:GetTranslation(), parentmat:GetAngles()
 			local childpos, childang = childmat:GetTranslation(), childmat:GetAngles()
 			local relpos, relang = WorldToLocal(childpos, childang, parentpos, parentang)
-			infotab[v] = {name = n, pos = Vector(0,0,0), ang = Angle(0,0,0), parent = boneparent, relativePos = relpos, relativeAng = relang, offsetAng = Angle(0,0,0)}
-			ordertab[#ordertab+1] = v
+			infotab[v] = {name = n, pos = Vector(), ang = Angle(), parent = boneparent, relativePos = relpos, relativeAng = relang, offsetAng = Angle()}
+			table.insert(ordertab,v)
 		end
 
 		for k,v in pairs(bones) do
 			RecursiveBoneTable2(ent, v, infotab, ordertab, true)
 		end
 	end
-	
+
+	local function GetOverrideHandPose(ply,bLeft)
+		local pos,ang
+
+		local wep = ply:GetActiveWeapon()
+		if wep:IsValid() && wep.VRMod_OverrideHandPose then
+			pos,ang = wep:VRMod_OverrideHandPose(bLeft)
+		end
+
+		if not pos then
+			pos,ang = hook.Run("VRMod_OverrideHandPose",ply,bLeft)
+		end
+
+		return pos,ang
+	end
+
 	local function UpdateIK(ply)
 		local steamid = ply:SteamID()
 		local net = g_VR.net[steamid]
@@ -85,7 +100,7 @@ if CLIENT then
 		local bones = charinfo.bones
 		local frame = net.lerpedFrame
 		local inVehicle = ply:InVehicle()
-		local plyAng = inVehicle and ply:GetVehicle():GetAngles() or Angle(0,frame.characterYaw,0)
+		local plyAng = inVehicle && ply:GetVehicle():GetAngles() or Angle(0,frame.characterYaw,0)
 
 		if inVehicle then
 			_,plyAng = LocalToWorld(zeroVec,Angle(0,90,0),zeroVec, plyAng)
@@ -98,7 +113,7 @@ if CLIENT then
 		end
 
 		--****************** CROUCHING ******************
-		if !inVehicle then
+		if not inVehicle then
 			local headHeight = frame.hmdPos.z + (frame.hmdAng:Forward()*-3).z
 			local cutAmount = math.Clamp(charinfo.preRenderPos.z+charinfo.characterEyeHeight - headHeight,0,40)
 
@@ -139,8 +154,11 @@ if CLIENT then
 			local left = i == 1
 			local name = left && "left" or "right"
 
-			local TargetPos = frame[name.."handPos"]
-			local TargetAng = frame[name.."handAng"]
+			local TargetPos,TargetAng = GetOverrideHandPose(ply,left)
+			if not TargetPos or not TargetAng then
+				TargetPos,TargetAng = frame[name.."handPos"],frame[name.."handAng"]
+			end
+
 			local mtx = ply:GetBoneMatrix(bones["b_"..name.."Clavicle"])
 			local ClaviclePos = mtx and mtx:GetTranslation() or Vector()
 
@@ -280,6 +298,7 @@ if CLIENT then
 					for i = 1,2 do
 						for k,v in pairs(i==1 and g_VR.input.skeleton_lefthand.fingerCurls or g_VR.input.skeleton_righthand.fingerCurls) do
 							if v < 0 or v > 1 or (k==3 and v == 0.75) then
+								print("VRMod: Failed finger tracking check")
 								g_VR.defaultOpenHandAngles = g_VR.zeroHandAngles
 								g_VR.defaultClosedHandAngles = g_VR.zeroHandAngles
 								g_VR.openHandAngles = g_VR.zeroHandAngles
@@ -483,7 +502,7 @@ if CLIENT then
 	local updatedPlayers = {}
 	local function PrePlayerDrawFunc( ply )
 		local steamid = ply:SteamID()
-		if !g_VR.activePlayers[steamid] or !g_VR.net[steamid].lerpedFrame then return end
+		if not g_VR.activePlayers[steamid] or not g_VR.net[steamid].lerpedFrame then return end
 
 		local charinfo = g_VR.characterInfo[steamid]
 		if charinfo.modelName != (ply.vrmod_pm or ply:GetModel()) then
@@ -498,7 +517,7 @@ if CLIENT then
 		end
 
 		charinfo.preRenderPos = ply:GetPos()
-		if !ply:InVehicle() then
+		if not ply:InVehicle() then
 			local netinfo = g_VR.net[steamid]
 
 			charinfo.renderPos = netinfo.lerpedFrame.hmdPos + up:Cross(netinfo.lerpedFrame.hmdAng:Right())*-charinfo.characterHeadToHmdDist + Angle(0,netinfo.lerpedFrame.characterYaw,0):Forward()*-charinfo.horizontalCrouchOffset*0.8
@@ -514,7 +533,7 @@ if CLIENT then
 			prevFrameNumber = FrameNumber()
 			updatedPlayers = {}
 		end
-		if !updatedPlayers[steamid] then
+		if not updatedPlayers[steamid] then
 			UpdateIK(ply)
 			updatedPlayers[steamid] = 1
 		end

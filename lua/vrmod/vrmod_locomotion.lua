@@ -15,7 +15,8 @@ hook.Add("VRMod_Input","teleport",function( action, pressed )
 	if action == "boolean_chat" and not LocalPlayer():InVehicle() then
 		if pressed then
 			tpBeamEnt = ClientsideModel("models/vrmod/tpbeam.mdl")
-			tpBeamEnt:SetRenderMode(RENDERMODE_TRANSCOLOR)
+			--tpBeamEnt:SetRenderMode(RENDERMODE_TRANSCOLOR)
+
 			tpBeamEnt.RenderOverride = function(self)
 				render.SuppressEngineLighting(true)
 				self:SetupBones()
@@ -26,6 +27,7 @@ hook.Add("VRMod_Input","teleport",function( action, pressed )
 				render.SetColorModulation(1,1,1)
 				render.SuppressEngineLighting(false)
 			end
+
 			hook.Add("VRMod_PreRender","teleport",function()
 				local controllerPos, controllerDir = g_VR.tracking.pose_righthand.pos, g_VR.tracking.pose_righthand.ang:Forward()
 				prevPos = controllerPos
@@ -34,6 +36,7 @@ hook.Add("VRMod_Input","teleport",function( action, pressed )
 					local d = i-1
 					local nextPos = controllerPos+controllerDir*50*d+Vector(0,0,-d*d*3)
 					local v = nextPos-prevPos
+
 					if not hit then
 						local tr = util.TraceLine({start=prevPos, endpos = prevPos+v, filter = LocalPlayer()})
 						hit = tr.Hit
@@ -52,12 +55,15 @@ hook.Add("VRMod_Input","teleport",function( action, pressed )
 							tpBeamEnt:SetPos(tr.HitPos)
 						end
 					end
+
 					tpBeamMatrices[i] = Matrix()
 					tpBeamMatrices[i]:Translate(prevPos+v*0.5)
 					tpBeamMatrices[i]:Rotate(v:Angle()+Angle(-90,0,0))
 					tpBeamMatrices[i]:Scale(Vector(0.5,0.5,v:Length()))
+
 					prevPos = nextPos
 				end
+
 				if not hit then
 					tpBeamEnt:SetColor(Color(0,0,0,0))
 					tpBeamHitPos = nil
@@ -66,6 +72,7 @@ hook.Add("VRMod_Input","teleport",function( action, pressed )
 		else
 			tpBeamEnt:Remove()
 			hook.Remove("VRMod_PreRender","teleport")
+
 			if tpBeamHitPos then
 				net.Start("vrmod_teleport") net.WriteVector(tpBeamHitPos) net.SendToServer()
 			end
