@@ -90,6 +90,15 @@ local defaults = {
 		LocalPlayer():ConCommand(pressed and "+reload" or "-reload")
 	end,
 
+	-- This should get renamed when we remake the action set
+	boolean_chat = function(pressed)
+		if pressed then
+			vrmod.TeleportStart()
+		else
+			vrmod.TeleportEnd()
+		end
+	end,
+
 	boolean_undo = function(pressed)
 		if pressed then
 			LocalPlayer():ConCommand("gmod_undo")

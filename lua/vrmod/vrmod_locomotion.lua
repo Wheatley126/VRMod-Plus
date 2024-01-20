@@ -1,87 +1,209 @@
---******************************************************************************************************************************
+-- TELEPORT CODE START
 local cv_allowtp = CreateConVar("vrmod_allow_teleport", "1", FCVAR_REPLICATED)
-if SERVER then 
+
+local rayHeight = 32
+local fallHeight = 236
+local up = Vector(0,0,1)
+local slopeZ = 0.707107
+
+-- Returns the end position and normal
+local function FindTeleportPos(ply,startPos,ang)
+	-- Don't allow teleporting if we're falling
+	if not ply:OnGround() then return false,startPos,vector_origin end
+
+	local norm = ang:Forward()
+	local speed = ply:GetWalkSpeed()+(ply:GetRunSpeed()-ply:GetWalkSpeed())/2
+
+	local tr = util.TraceLine({
+		start = startPos,
+		endpos = startPos+norm*speed,
+		filter = ply,
+		collisiongroup = COLLISION_GROUP_PLAYER,
+		mask = MASK_PLAYERSOLID
+	})
+
+	if not tr.Hit then
+		return false,startPos+norm*speed,-norm
+	end
+
+	local realPos,hitnorm = tr.HitPos,tr.HitNormal
+	local renderPos = Vector(realPos)
+
+	local mins,maxs = ply:GetHullDuck()
+	local tall = Vector(0,0,maxs[3]-mins[3])
+
+	-- Check for floor
+	tr = util.TraceHull({
+		start = realPos,
+		endpos = realPos+tall,
+		filter = ply,
+		mins = mins,
+		maxs = maxs,
+		collisiongroup = COLLISION_GROUP_PLAYER,
+		mask = MASK_PLAYERSOLID
+	})
+
+	local raised = false
+	if tr.FractionLeftSolid > 0 then
+		realPos[3] = realPos[3]+tall[3]*tr.FractionLeftSolid--+0.05
+		raised = true
+	end
+
+	--- Past here is checking if the area should be accessible
+
+	-- TODO: Add fall damage check to height restriction
+	if (raised && up[3] or hitnorm[3]) < slopeZ or realPos[3]-ply:GetPos()[3] > math.max(ply:GetStepSize(),ply:GetJumpPower()*0.34) or tr.Fraction-tr.FractionLeftSolid <= 0 then
+		return false,renderPos,hitnorm
+	end
+
+	local fullmins,fullmaxs = ply:GetHull()
+	local add = Vector(0,0,fullmaxs[3]-maxs[3])
+
+	-- Make sure the area is accessible
+	tr = util.TraceHull({
+		start = ply:GetPos()+add,
+		endpos = realPos+add,
+		filter = ply,
+		mins = mins,
+		maxs = maxs,
+		collisiongroup = COLLISION_GROUP_PLAYER,
+		mask = MASK_PLAYERSOLID
+	})
+	if tr.Hit then
+		return false,renderPos,hitnorm
+	end
+
+	return true,realPos,raised && up or hitnorm
+end
+
+if SERVER then
 	util.AddNetworkString("vrmod_teleport")
 	vrmod.NetReceiveLimited("vrmod_teleport",10,200,function(len, ply)
-		if cv_allowtp:GetBool() and g_VR[ply:SteamID()] ~= nil and (hook.Run("PlayerNoClip", ply, true) == true or ULib and ULib.ucl.query( ply, "ulx noclip" ) == true) then
-			ply:SetPos(net.ReadVector())
+		local pos,ang = net.ReadVector(),net.ReadAngle()
+
+		-- Previously this also required noclip permissions
+		-- if (hook.Run("PlayerNoClip", ply, true) == true or ULib and ULib.ucl.query( ply, "ulx noclip" ) == true)
+		if pos and ang and cv_allowtp:GetBool() and vrmod.IsPlayerInVR(ply) then
+			local success,hitpos,hitang = FindTeleportPos(ply,pos,ang)
+			if success then
+				ply:SetPos(hitpos)
+			else
+				-- TODO: Play fail sound
+			end
 		end
 	end)
+
+
 	return
 end
-local tpBeamMatrices, tpBeamEnt, tpBeamHitPos = {}, nil, nil
-for i = 1,17 do tpBeamMatrices[i] = Matrix() end
-hook.Add("VRMod_Input","teleport",function( action, pressed )
-	if action == "boolean_chat" and not LocalPlayer():InVehicle() then
-		if pressed then
-			tpBeamEnt = ClientsideModel("models/vrmod/tpbeam.mdl")
-			--tpBeamEnt:SetRenderMode(RENDERMODE_TRANSCOLOR)
 
-			tpBeamEnt.RenderOverride = function(self)
-				render.SuppressEngineLighting(true)
-				self:SetupBones()
-				for i = 1,17 do
-					self:SetBoneMatrix(i-1, tpBeamMatrices[i])
-				end
-				self:DrawModel()
-				render.SetColorModulation(1,1,1)
-				render.SuppressEngineLighting(false)
-			end
+local function GetSegmentPos(i,forw,zDiff)
+	local perc = (i-1)/16
 
-			hook.Add("VRMod_PreRender","teleport",function()
-				local controllerPos, controllerDir = g_VR.tracking.pose_righthand.pos, g_VR.tracking.pose_righthand.ang:Forward()
-				prevPos = controllerPos
-				local hit = false
-				for i=2,17 do
-					local d = i-1
-					local nextPos = controllerPos+controllerDir*50*d+Vector(0,0,-d*d*3)
-					local v = nextPos-prevPos
+	local bend = math.min(math.max(forw*0.05,zDiff*0.1),20) -- Arc elasticity
+	return Vector(forw*perc,0,math.sin(perc*3.14)*bend)
+end
 
-					if not hit then
-						local tr = util.TraceLine({start=prevPos, endpos = prevPos+v, filter = LocalPlayer()})
-						hit = tr.Hit
-						if hit then
-							tpBeamMatrices[1] = Matrix()
-							tpBeamMatrices[1]:Translate(tr.HitPos+tr.HitNormal)
-							tpBeamMatrices[1]:Rotate(tr.HitNormal:Angle()+Angle(90,0,90))
-							if tr.HitNormal.z < 0.7 then
-								tpBeamMatrices[1]:Scale(Vector(0.5,0.5,0.5))
-								tpBeamEnt:SetColor(Color(255,100,100,150))
-								tpBeamHitPos = nil
-							else
-								tpBeamEnt:SetColor(Color(100,255,100,150))
-								tpBeamHitPos = tr.HitPos
-							end
-							tpBeamEnt:SetPos(tr.HitPos)
-						end
-					end
+local function UpdatePreviewBones(self,startpos,endpos,endang,success)
+	self:SetupBones() -- Avoid "Bone is unwriteable" error
 
-					tpBeamMatrices[i] = Matrix()
-					tpBeamMatrices[i]:Translate(prevPos+v*0.5)
-					tpBeamMatrices[i]:Rotate(v:Angle()+Angle(-90,0,0))
-					tpBeamMatrices[i]:Scale(Vector(0.5,0.5,v:Length()))
-
-					prevPos = nextPos
-				end
-
-				if not hit then
-					tpBeamEnt:SetColor(Color(0,0,0,0))
-					tpBeamHitPos = nil
-				end
-			end)
-		else
-			tpBeamEnt:Remove()
-			hook.Remove("VRMod_PreRender","teleport")
-
-			if tpBeamHitPos then
-				net.Start("vrmod_teleport") net.WriteVector(tpBeamHitPos) net.SendToServer()
-			end
-		end
+	local mtx = Matrix()
+	mtx:SetTranslation(endpos)
+	mtx:SetAngles(endang)
+	if not success then
+		mtx:SetScale(Vector(0.5,0.5,0.5))
 	end
-end)
---******************************************************************************************************************************
 
-if SERVER then return end
+	self:SetBoneMatrix(0,mtx)
+
+	local offset = endpos-startpos
+	local realang = offset:Angle()
+	local lOffset = WorldToLocal(endpos,angle_zero,startpos,realang)[1]
+
+	-- Gap fix
+	local gap = lOffset*0.003
+
+	for bone = 1,16 do
+		local pos = GetSegmentPos(bone,lOffset,offset[3])
+		local ang = (GetSegmentPos(bone+1,lOffset,offset[3])-GetSegmentPos(bone-1,lOffset,offset[3])):Angle()
+		ang[1] = ang[1]-90
+
+		pos,ang = LocalToWorld(pos,ang,startpos,realang)
+
+		mtx:Identity()
+		mtx:SetTranslation(pos)
+		mtx:SetAngles(ang)
+		mtx:SetScale(Vector(1,1,lOffset/16+gap))
+
+		self:SetBoneMatrix(bone,mtx)
+	end
+end
+
+local mat = Material("vrmod/tpbeam")
+local clr_success = Vector(100,255,100)/255
+local clr_fail = Vector(255,100,100)/255
+
+local function DoDraw()
+	local startpos,startang = g_VR.tracking.pose_righthand.pos,g_VR.tracking.pose_righthand.ang
+
+	local success,hitpos,hitnorm = FindTeleportPos(LocalPlayer(),startpos,startang)
+	local endang = hitnorm:Angle()
+
+	if hook.Run("VRMod_DrawTeleport",startpos,hitpos,endang,success) then return end
+
+	if not IsValid(tpEnt) then
+		tpEnt = ClientsideModel("models/vrmod/tpbeam.mdl")
+		tpEnt:SetNoDraw(true)
+		--tpEnt:SetRenderMode(RENDERMODE_TRANSCOLOR)
+	end
+
+	endang[1] = endang[1]+90
+	endang[3] = endang[3]+90
+	UpdatePreviewBones(tpEnt,startpos,hitpos,endang,success)
+
+	if success then mat:SetVector("$color2",clr_success) else mat:SetVector("$color2",clr_fail) end
+	mat:SetFloat("$alpha",0.588) -- 150/255
+
+	render.ModelMaterialOverride(mat)
+	tpEnt:DrawModel()
+	render.ModelMaterialOverride()
+end
+
+local teleporting = false
+local tpEnt
+function vrmod.TeleportStart()
+	if teleporting then return end
+
+	hook.Add("PreDrawTranslucentRenderables","VRMod_DrawTeleport",DoDraw)
+
+	teleporting = true
+end
+
+function vrmod.TeleportEnd()
+	if not teleporting then return end
+	local startpos,startang = g_VR.tracking.pose_righthand.pos,g_VR.tracking.pose_righthand.ang
+	local success,hitpos,hitnorm = FindTeleportPos(LocalPlayer(),startpos,startang)
+
+	if success then
+		net.Start("vrmod_teleport")
+			net.WriteVector(startpos)
+			net.WriteAngle(startang)
+		net.SendToServer()
+	else
+		-- TODO: Play fail sound
+	end
+
+	hook.Remove("PreDrawTranslucentRenderables","VRMod_DrawTeleport")
+	if IsValid(tpEnt) then
+		tpEnt:Remove()
+		tpEnt = nil
+	end
+
+	teleporting = false
+end
+
+
+-- TELEPORT CODE END
 
 
 local convars, convarValues = vrmod.AddCallbackedConvar("vrmod_controlleroriented", "controllerOriented", "0", nil, nil, nil, nil, tobool)
@@ -253,6 +375,3 @@ timer.Simple(0,function()
 		LocalPlayer():ConCommand("noclip")
 	end)
 end)
-
-
-
