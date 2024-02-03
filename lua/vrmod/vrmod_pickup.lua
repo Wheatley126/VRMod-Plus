@@ -27,7 +27,7 @@ local function CanGrab(e,phys,pl)
 		return not mass or mass <= cvar_mass:GetFloat()
 	end
 
-	return phys:IsValid() && phys:IsMoveable() && phys:GetMass() <= cvar_mass:GetFloat() && not phys:HasGameFlag(FVPHYSICS_MULTIOBJECT_ENTITY) && (e.CPPICanPickup == nil or e:CPPICanPickup(pl))
+	return phys:IsValid() && phys:IsMoveable() && not phys:HasGameFlag(FVPHYSICS_NO_PLAYER_PICKUP) && not phys:HasGameFlag(FVPHYSICS_MULTIOBJECT_ENTITY) && phys:GetMass() <= cvar_mass:GetFloat() && (e.CPPICanPickup == nil or e:CPPICanPickup(pl))
 end
 
 local cylRadius = 16
