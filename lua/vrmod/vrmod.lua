@@ -49,7 +49,8 @@ if CLIENT then
 	vrmod.AddCallbackedConvar("vrmod_desktopview", nil, "3")
 	vrmod.AddCallbackedConvar("vrmod_useworldmodels", nil, "0")
 	vrmod.AddCallbackedConvar("vrmod_laserpointer", nil, "0")
-	vrmod.AddCallbackedConvar("vrmod_znear", nil, "1")
+	-- Disabled for now because you shouldn't have much reason to change this manually
+	--vrmod.AddCallbackedConvar("vrmod_znear", nil, "1")
 	vrmod.AddCallbackedConvar("vrmod_oldcharacteryaw", nil, "0")
 	vrmod.AddCallbackedConvar("vrmod_controlleroffset_x", nil, "-15")
 	vrmod.AddCallbackedConvar("vrmod_controlleroffset_y", nil, "-1")
@@ -422,7 +423,7 @@ if CLIENT then
 					table.remove(simulate,k)
 				end
 			end
-			if #simulate == 0 then
+			if table.IsEmpty(simulate) then
 				hook.Remove("VRMod_Tracking","simulatehands")
 			end
 		end)
@@ -437,7 +438,7 @@ if CLIENT then
 			--fov = hfov,
 			drawmonitors = true,
 			drawviewmodel = false,
-			znear = convars.vrmod_znear:GetFloat(),
+			znear = 3,--convars.vrmod_znear:GetFloat(),
 			dopostprocess = convars.vrmod_postprocess:GetBool()
 		}
 		
@@ -766,5 +767,3 @@ elseif SERVER then
 	
 	CreateConVar("vrmod_version", vrmod.GetVersion(), FCVAR_NOTIFY)
 end
-
-
