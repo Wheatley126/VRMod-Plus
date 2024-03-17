@@ -286,7 +286,7 @@ if CLIENT then
 	function g_VR.CharacterInit(ply)
 		local steamid = ply:SteamID()
 		
-		local pmname = ply.vrmod_pm or ply:GetModel()
+		local pmname = ply:GetModel()
 		if g_VR.characterInfo[steamid] and g_VR.characterInfo[steamid].modelName == pmname then
 			return
 		end
@@ -505,7 +505,7 @@ if CLIENT then
 		if not g_VR.activePlayers[steamid] or not g_VR.net[steamid].lerpedFrame then return end
 
 		local charinfo = g_VR.characterInfo[steamid]
-		if charinfo.modelName != (ply.vrmod_pm or ply:GetModel()) then
+		if charinfo.modelName ~= ply:GetModel() then
 			if g_VR.CharacterInit(ply) == false then return end
 		end
 

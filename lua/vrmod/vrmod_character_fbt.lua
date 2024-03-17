@@ -55,7 +55,7 @@ local function Init( ply )
 	local steamid = ply:SteamID()
 	local info = characterInfo[steamid] or {}
 	characterInfo[steamid] = info
-	local pmname = ply.vrmod_pm or ply:GetModel()
+	local pmname = ply:GetModel()
 	if info.modelName == pmname then return end
 	
 	local tmpPlayerModel = ClientsideModel(pmname)
@@ -459,7 +459,7 @@ end
 local function Calibrate()
 	local ply = LocalPlayer()
 	ply.RenderOverride = function() end
-	local calibrationModel = ClientsideModel(ply.vrmod_pm or ply:GetModel())
+	local calibrationModel = ClientsideModel(ply:GetModel())
 	calibrationModel:SetPos( Vector(g_VR.tracking.hmd.pos.x, g_VR.tracking.hmd.pos.y, ply:GetPos().z) )
 	calibrationModel:SetAngles( Angle(0, g_VR.tracking.hmd.ang.yaw, 0) )
 	hook.Add("PostDrawTranslucentRenderables","fbt_test_showtrackers",function(depth, sky)
