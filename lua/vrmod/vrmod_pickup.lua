@@ -40,14 +40,14 @@ local function GetGrabbableObjects(pl,pos,ang)
 		if !e:IsValid() or !CanGrab(e,e:GetPhysicsObject(),pl) then continue end
 
 		local testpos = WorldToLocal(e:LocalToWorld(e:OBBCenter()),angle_zero,pos,ang)
-		testpos = LocalToWorld(Vector(testpos[1]-e:BoundingRadius()),angle_zero,pos,ang)
+		testpos = LocalToWorld(Vector(testpos[1]-math.min(e:BoundingRadius(),testpos[1])),angle_zero,pos,ang)
 
 		local point = ClosestPointInOBB(e,testpos)
 		if pos:DistToSqr(point) > range*range then continue end
 
 		local lpos = WorldToLocal(point,angle_zero,pos,ang)
 		local deviate = Vector(lpos[2],lpos[3]):Length2DSqr()
-		if lpos[1] < -0.01 or deviate > cylRadius*cylRadius then continue end
+		if lpos[1] < 0 or deviate > cylRadius*cylRadius then continue end
 
 		local priority = lpos[1]/2
 		priority = priority*priority+deviate
@@ -250,7 +250,7 @@ if CLIENT then
 		end
 	end)
 
-	local hovered = {}
+	--[[local hovered = {}
 	function g_VR.DrawPickupHalos()
 		local pl = LocalPlayer()
 
@@ -312,7 +312,7 @@ if CLIENT then
 		if pl == LocalPlayer() then
 			hook.Remove("PreDrawHalos","VRMod_PickupHalos")
 		end
-	end)
+	end)]]
 
 elseif SERVER then
 
