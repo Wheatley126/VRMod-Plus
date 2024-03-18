@@ -17,7 +17,12 @@ if CLIENT then
 	local prevFocusPanel = nil
 	
 	function VRUtilMenuRenderPanel(uid)
-		if !menus[uid] or !menus[uid].panel or !menus[uid].panel:IsValid() then return end
+		if not menus[uid] or not menus[uid].panel or not menus[uid].panel:IsValid() then return end
+
+		if menus[uid].limit then
+			if menus[uid].framesleft == 0 then return end
+			menus[uid].framesleft = menus[uid].framesleft-1
+		end
 
 		render.PushRenderTarget(menus[uid].rt)
 
@@ -55,6 +60,12 @@ if CLIENT then
 
 	function VRUtilRenderMenuRTs()
 		for uid,t in pairs(menus) do
+			if t.limit then
+				if input.IsMouseDown(MOUSE_LEFT) or input.IsMouseDown(MOUSE_RIGHT) then
+					t.framesleft = t.limit
+				end
+			end
+
 			if t.renderFunc then
 				if isfunction(t.renderFunc) then
 					VRUtilMenuRenderStart(uid)
@@ -174,8 +185,11 @@ if CLIENT then
 		end
 	end
 	
-	function VRUtilMenuOpen(uid, width, height, panel, attachment, pos, ang, scale, cursorEnabled, closeFunc, renderFunc)
+	function VRUtilMenuOpen(uid, width, height, panel, attachment, pos, ang, scale, cursorEnabled, closeFunc, renderFunc, limitFrames)
 		if menus[uid] then return end
+		if IsValid(panel) && panel:GetName() == "SpawnMenu" then
+			limitFrames = 6
+		end
 
 		menus[uid] = {
 			uid = uid,
@@ -189,7 +203,9 @@ if CLIENT then
 			rt = GetRenderTarget("vrmod_rt_ui_"..uid, width, height),
 			width = width,
 			height = height,
-			renderFunc = renderFunc
+			renderFunc = renderFunc,
+			limit = limitFrames,
+			framesleft = limitFrames
 		}
 
 		table.insert(menuOrder,menus[uid])
